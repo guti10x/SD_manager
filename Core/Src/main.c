@@ -93,11 +93,21 @@ int main(void)
   MX_SPI1_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
+
+  /* WRITE TXT FILE */
   HAL_Delay(500);
   f_mount(&fs, "", 0);
   f_open(&fil, "file1.txt", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
   f_lseek(&fil, fil.fsize);
   f_puts("Nuevo mensaje que se almacena en la ultima linea del doc\n", &fil);
+  f_close(&fil);
+
+  /* WRITE CSV FILE */
+  HAL_Delay(500);
+  f_mount(&fs, "", 0);
+  f_open(&fil, "file2.csv", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
+  f_lseek(&fil, fil.fsize);
+  f_puts("Dato1,Dato2,Dato3\n", &fil); // Añadir una fila con tres datos
   f_close(&fil);
   /* USER CODE END 2 */
 
