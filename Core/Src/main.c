@@ -20,6 +20,7 @@
 #include "main.h"
 #include "fatfs.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -32,8 +33,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-FATFS fs;
-FIL fil;
+FATFS fs;        // File system object
+FIL fil[7];      // Array of 7 file objects
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,6 +55,7 @@ SPI_HandleTypeDef hspi1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
+void setup_sd_files(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -60,6 +64,16 @@ static void MX_SPI1_Init(void);
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
+
+const char *filenames[7] = {
+    "Engine_temp.csv",
+    "Battery_volt.csv",
+    "Speed.csv",
+    "Gear.csv",
+    "RPM.csv",
+    "Brake_pedal.csv",
+    "Accel_pedal.csv"
+};
 
 /**
   * @brief  The application entry point.
@@ -94,21 +108,24 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
-  /* WRITE TXT FILE */
-  HAL_Delay(500);
-  f_mount(&fs, "", 0);
-  f_open(&fil, "file1.txt", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
-  f_lseek(&fil, fil.fsize);
-  f_puts("Nuevo mensaje que se almacena en la ultima linea del doc\n", &fil);
-  f_close(&fil);
-
   /* WRITE CSV FILE */
   HAL_Delay(500);
-  f_mount(&fs, "", 0);
-  f_open(&fil, "file2.csv", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
-  f_lseek(&fil, fil.fsize);
-  f_puts("Dato1,Dato2,Dato3\n", &fil); // Añadir una fila con tres datos
-  f_close(&fil);
+  //f_mount(&fs, "", 0);
+  //f_open(&fil, "file2.csv", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
+  //f_lseek(&fil, fil.fsize);
+  //f_puts("Dato1,Dato2,Dato3\n", &fil); // Añadir una fila con tres datos
+  //f_close(&fil);
+
+  // Montar el sistema de archivos
+  if (f_mount(&fs, "", 0) != FR_OK) {
+      // Manejar el error de montaje del sistema de archivos
+      Error_Handler();
+  }
+
+  setup_sd_files();
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -122,6 +139,27 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void setup_sd_files(void) {
+    FIL fil;  // Variable local para manejar cada archivo individualmente
+
+    for (int i = 0; i < 7; i++) {
+        // Abrir el archivo
+        if (f_open(&fil, filenames[i], FA_OPEN_ALWAYS | FA_WRITE | FA_READ) != FR_OK) {
+            // Manejar el error de apertura o creación del archivo
+            Error_Handler();
+        }
+
+        // Posicionarse al final del archivo para añadir datos
+        f_lseek(&fil, f_size(&fil));
+
+        // Escribir una línea de ejemplo en el archivo
+        f_puts("Reset detected\n", &fil);
+
+        // Cerrar el archivo
+        f_close(&fil);
+    }
 }
 
 /**
