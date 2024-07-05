@@ -230,7 +230,7 @@ void save_sd(int id, const char* value, const char* timestamp) {
     char buffer[256]; // Buffer para la línea que se va a escribir
 
     // Abrir el archivo data.csv
-    if (f_open(&fil, "data.csv", FA_OPEN_ALWAYS | FA_WRITE) != FR_O	K) {
+    if (f_open(&fil, "data.csv", FA_OPEN_ALWAYS | FA_WRITE) != FR_OK) {
         // Manejar el error de apertura o creación del archivo
         Error_Handler();
         return; // Salir de la función si falla la apertura del archivo
