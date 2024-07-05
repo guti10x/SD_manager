@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
+#include <time.h>
 
 
 /* Private includes ----------------------------------------------------------*/
@@ -55,7 +56,49 @@ SPI_HandleTypeDef hspi1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
-void setup_sd_files(void);
+void save_sd(int id, const char* value, const char* timestamp);
+void get_current_timestamp(char* buffer, size_t buffer_size);
+void RTC_Init(void) {
+    RTC_HandleTypeDef hrtc;
+
+    hrtc.Instance = RTC;
+    hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+    hrtc.Init.AsynchPrediv = 127;
+    hrtc.Init.SynchPrediv = 255;
+    hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+    hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+    hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+    if (HAL_RTC_Init(&hrtc) != HAL_OK) {
+        // Initialization Error
+        Error_Handler();
+    }
+
+    // If the RTC is not yet set, set the time and date
+    RTC_TimeTypeDef sTime = {0};
+    RTC_DateTypeDef sDate = {0};
+
+    // Set Date: 1st January 2023
+    sDate.Year = 23;
+    sDate.Month = RTC_MONTH_JANUARY;
+    sDate.Date = 1;
+    sDate.WeekDay = RTC_WEEKDAY_SUNDAY;
+
+    if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK) {
+        // Date set error
+        Error_Handler();
+    }
+
+    // Set Time: 00:00:00
+    sTime.Hours = 0;
+    sTime.Minutes = 0;
+    sTime.Seconds = 0;
+
+    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) {
+        // Time set error
+        Error_Handler();
+    }
+}
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -66,13 +109,13 @@ void setup_sd_files(void);
 /* USER CODE END 0 */
 
 const char *filenames[7] = {
-    "Engine_temp.csv",
-    "Battery_volt.csv",
-    "Speed.csv",
-    "Gear.csv",
-    "RPM.csv",
-    "Brake_pedal.csv",
-    "Accel_pedal.csv"
+	"Engine_temp.csv",
+	"Battery_volt.csv",
+	"Speed.csv",
+	"Gear.csv",
+	"RPM.csv",
+	"Brake_pedal.csv",
+	"Accel_pedal.csv"
 };
 
 /**
@@ -116,14 +159,17 @@ int main(void)
   //f_puts("Dato1,Dato2,Dato3\n", &fil); // Añadir una fila con tres datos
   //f_close(&fil);
 
+  char timestamp[20];
+  int case_index = 0;
+
   // Montar el sistema de archivos
   if (f_mount(&fs, "", 0) != FR_OK) {
       // Manejar el error de montaje del sistema de archivos
       Error_Handler();
   }
 
-  setup_sd_files();
-
+  get_current_timestamp(timestamp, sizeof(timestamp));
+  save_sd(0,"Restarted detected", timestamp);
 
 
   /* USER CODE END 2 */
@@ -136,31 +182,88 @@ int main(void)
 	 /* Toggle the LED */
 	 HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 	 HAL_Delay(200);
+
+	 get_current_timestamp(timestamp, sizeof(timestamp));
+
+	 switch (case_index) {
+	 	  case 0:
+	 		  //ID_Engine_temp
+	 		  save_sd(1, "Valor_Engine_temp", timestamp);
+	 		  break;
+	 	  case 1:
+	 		  //Battery_volt
+	 		  save_sd(2, "Valor_Battery_volt", timestamp);
+	 		  break;
+	 	  case 2:
+	 		  //Speed
+	 		  save_sd(3, "Valor_Speed", timestamp);
+	 		  break;
+	 	  case 3:
+	 		  //Gear
+	 		  save_sd(4, "Valor_Gear", timestamp);
+	 		  break;
+	 	  case 4:
+	 		  //RPMs
+	 		  save_sd(5, "Valor_RPM", timestamp);
+	 		  break;
+	 	  case 5:
+	 		  //Brake_pedal
+	 		  save_sd(6, "Valor_Brake_pedal", timestamp );
+	 		  break;
+	 	  case 6:
+	 		  //Accel_pedal
+	 		  save_sd(7,"Valor_Accel_pedal", timestamp);
+	 		  break;
+	 	  default:
+	 		  // Manejar el caso por defecto si case_index está fuera de rango
+	 		  Error_Handler();
+	 		  break;
+	   }
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
 
-void setup_sd_files(void) {
-    FIL fil;  // Variable local para manejar cada archivo individualmente
+void save_sd(int id, const char* value, const char* timestamp) {
+    FIL fil;  // Variable local para manejar el archivo data.csv
+    char buffer[256]; // Buffer para la línea que se va a escribir
 
-    for (int i = 0; i < 7; i++) {
-        // Abrir el archivo
-        if (f_open(&fil, filenames[i], FA_OPEN_ALWAYS | FA_WRITE | FA_READ) != FR_OK) {
-            // Manejar el error de apertura o creación del archivo
-            Error_Handler();
-        }
-
-        // Posicionarse al final del archivo para añadir datos
-        f_lseek(&fil, f_size(&fil));
-
-        // Escribir una línea de ejemplo en el archivo
-        f_puts("Reset detected\n", &fil);
-
-        // Cerrar el archivo
-        f_close(&fil);
+    // Abrir el archivo data.csv
+    if (f_open(&fil, "data.csv", FA_OPEN_ALWAYS | FA_WRITE) != FR_O	K) {
+        // Manejar el error de apertura o creación del archivo
+        Error_Handler();
+        return; // Salir de la función si falla la apertura del archivo
     }
+
+    // Posicionarse al final del archivo para añadir datos
+    if (f_lseek(&fil, f_size(&fil)) != FR_OK) {
+        // Manejar el error de lseek
+        f_close(&fil);
+        Error_Handler();
+        return; // Salir de la función si falla el posicionamiento
+    }
+
+    // Escribir el id, value y timestamp en una sola línea
+    snprintf(buffer, sizeof(buffer), "%d, %s, %s\n", id, value, timestamp);
+    if (f_puts(buffer, &fil) == EOF) {
+        // Manejar el error de escritura
+        f_close(&fil);
+        Error_Handler();
+        return; // Salir de la función si falla la escritura
+    }
+
+    // Cerrar el archivo
+    f_close(&fil);
 }
+
+// Función para obtener la fecha y hora actuales en formato de cadena
+void get_current_timestamp(char* buffer, size_t buffer_size) {
+    time_t now = time(NULL);
+    struct tm* t = localtime(&now);
+    strftime(buffer, buffer_size, "%Y-%m-%d %H:%M:%S", t);
+}
+
 
 /**
   * @brief System Clock Configuration
