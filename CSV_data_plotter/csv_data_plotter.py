@@ -9,15 +9,9 @@
 import csv
 import sys
 import os
-from turtle import pd
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QVBoxLayout, QWidget, QSizePolicy, QTableWidget, QTableWidgetItem, QSpacerItem, QScrollArea
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
-from PyQt6.QtCore import Qt
-import matplotlib.pyplot as plt
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QSizePolicy
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QWidget, QPushButton, QFileDialog, QSpacerItem
 
 
 class Ventana(QWidget):
@@ -81,22 +75,20 @@ class Ventana(QWidget):
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
-       
-
         # Espacio entre los botones
         # layout_botones.addSpacing(70)
 
         # Botón para cargar los datos del archivo
-        btn_cargar_datos = QPushButton('visualize data', self)
+        btn_cargar_datos= QPushButton('visualize data', self)
         btn_cargar_datos.clicked.connect(self.cargar_datos)
         btn_cargar_datos.setStyleSheet("padding: 5px 20px;") 
         layout_botones.addWidget(btn_cargar_datos)
 
         # Botón para cargar los datos del archivo
-        btn_cargar_datos = QPushButton('Upload to Google Drive', self)
-        btn_cargar_datos.clicked.connect(self.cargar_datos)
-        btn_cargar_datos.setStyleSheet("padding: 5px 20px;") 
-        layout_botones.addWidget(btn_cargar_datos)
+        btn_drive_upload = QPushButton('Upload to Google Drive', self)
+        btn_drive_upload.clicked.connect(self.cargar_datos)
+        btn_drive_upload.setStyleSheet("padding: 5px 20px;") 
+        layout_botones.addWidget(btn_drive_upload)
 
         # Añadir espacio flexible después de los botones para empujarlos a la izquierda
         layout_botones.addStretch(1)
@@ -105,34 +97,50 @@ class Ventana(QWidget):
         layout.addLayout(layout_botones)
 
         # Crear layout horizontal
-        layout_horizontal = QHBoxLayout()
-
+        #layout_horizontal = QHBoxLayout()
         # Iterar sobre los archivos csv y agregar checkboxes directamente
-        for nombre_csv in self.archivos_csv:
-            checkbox = QCheckBox(nombre_csv, self)
-            checkbox.setChecked(True) 
-            layout_horizontal.addWidget(checkbox)
+        #for nombre_csv in self.archivos_csv:
+            #checkbox = QCheckBox(nombre_csv, self)
+            #checkbox.setChecked(True) 
+            #layout_horizontal.addWidget(checkbox)
+        #layout.addLayout(layout_horizontal)
+
+       
+
+        # Widget scrollable para las tablas
+        self.scroll_content = QWidget()
+        self.layout_tablas = QVBoxLayout(self.scroll_content)
         
-        layout.addLayout(layout_horizontal)
-        self.show()
+        # Crear un área de scroll y configurar el contenido
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.scroll_area.setFixedHeight(600)
+        self.scroll_area.hide()
 
-        # Layout vertical para las tablas
-        self.layout_tablas = QVBoxLayout()
-
-        layout.addLayout(self.layout_tablas)
+        # Agregar el área de scroll al layout principal
+        layout.addWidget(self.scroll_area)
 
         spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         layout.addItem(spacer)
 
+        # Botón para cerrar scroll de datos
+        self.btn_close_data = QPushButton('Close', self)
+        self.btn_close_data.clicked.connect(self.close_data)
+        self.btn_close_data.setFixedSize(100, 30)  
+        self.btn_close_data.setStyleSheet("padding: 5px 20px;") 
+        self.btn_close_data.hide()
+        layout.addWidget(self.btn_close_data, alignment=Qt.AlignmentFlag.AlignRight)
+
         # IMG fondo
-        fondo = QLabel(self)
-        fondo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.backgroundLogo = QLabel(self)
+        self.backgroundLogo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         ruta_script = os.path.dirname(os.path.abspath(__file__))  
         ruta_imagen = os.path.join(ruta_script, 'assets/IMG_fondo.PNG') 
         pixmap = QPixmap(ruta_imagen)  
         pixmap = pixmap.scaled(self.size(), Qt.AspectRatioMode.IgnoreAspectRatio)
-        fondo.setPixmap(pixmap)
-        layout.addWidget(fondo)
+        self.backgroundLogo.setPixmap(pixmap)
+        layout.addWidget(self.backgroundLogo)
 
     ruta_to_input = ""
 
@@ -148,33 +156,53 @@ class Ventana(QWidget):
     def crear_grafica(self, nombre):
         return
     
+    def close_data(self, nombre):
+        self.scroll_area.hide()
+        self.btn_close_data.hide()
+    
     def cargar_datos(self):
         file_name = self.ruta_to_input
 
-        # Crear etiqueta de título
-        titulo = QLabel("Engine Temperture")
-        titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titulo.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
+        # Limpiar el layout existente antes de agregar nuevos elementos
+        for i in reversed(range(self.layout_tablas.count())):
+            widget = self.layout_tablas.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        # Crear una lista de IDs que queremos mostrar
+        ids_a_mostrar = [1, 2, 3, 4, 5, 6, 7]
+
+        # Crear un diccionario para almacenar los datos por ID
+        datos_por_id = {id_: [] for id_ in ids_a_mostrar}
 
         if file_name:
-            self.ruta_input = file_name  # Almacenar la ruta del archivo seleccionado
-
-            # Crear tabla y cargar datos desde CSV
-            tabla = QTableWidget()
-            tabla.setColumnCount(2)
-            tabla.setHorizontalHeaderLabels(['Timestamp', 'Valor'])
-
             with open(file_name, 'r', newline='') as csv_file:
                 csv_reader = csv.reader(csv_file)
                 next(csv_reader)  # Saltar la cabecera si la hay
-                data = list(csv_reader)
+                for line in csv_reader:
+                    if len(line) >= 3:  # Asegurar que la línea tenga al menos 3 elementos (ID, Valor, Timestamp)
+                        id_ = int(line[0])  # Suponiendo que el ID está en la primera columna y es un entero
+                        valor = line[1]
+                        timestamp = line[2]
+                        if id_ in datos_por_id:
+                            datos_por_id[id_].append((timestamp, valor))
 
-            tabla.setRowCount(len(data))
+            # Recorrer los IDs y crear una tabla para cada uno
+            for id_ in ids_a_mostrar:
+                titulo = QLabel(self.archivos_csv[id_ - 1])  # Usar el nombre del archivo correspondiente
+                titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                titulo.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
+                self.layout_tablas.addWidget(titulo)
 
-            for row, line in enumerate(data):
-                if len(line) >= 3:
-                    valor = line[1]
-                    timestamp = line[2]
+                tabla = QTableWidget()
+                tabla.setColumnCount(2)
+                tabla.setHorizontalHeaderLabels(['Timestamp', 'Valor'])
+
+                data = datos_por_id[id_]
+
+                tabla.setRowCount(len(data))
+
+                for row, (timestamp, valor) in enumerate(data):
                     item_timestamp = QTableWidgetItem(timestamp)
                     item_valor = QTableWidgetItem(valor)
 
@@ -185,24 +213,29 @@ class Ventana(QWidget):
                     tabla.setItem(row, 0, item_timestamp)
                     tabla.setItem(row, 1, item_valor)
 
-            # Ajustar el ancho de la columna 'Timestamp'
-            tabla.setColumnWidth(0, 200)  # Ajusta este valor según sea necesario
+                # Ajustar el ancho de la columna 'Timestamp'
+                tabla.setColumnWidth(0, 200)
 
-            # Establecer el alto y ancho de la tabla
-            altura_tabla = 300  # Ajusta esta altura según tus necesidades
-            ancho_tabla = 350
+                # Establecer el alto y ancho de la tabla
+                altura_tabla = 300
+                ancho_tabla = 350
 
-            tabla.setFixedHeight(altura_tabla)
-            tabla.setFixedWidth(ancho_tabla)
+                tabla.setFixedHeight(altura_tabla)
+                tabla.setFixedWidth(ancho_tabla)
+
+                # Agregar la tabla al layout
+                self.layout_tablas.addWidget(tabla)
 
         else:
             # Crear etiqueta de título
-            titulo = QLabel("No data to display")
+            titulo = QLabel("No hay datos para mostrar")
             titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
             titulo.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
-        self.layout_tablas.addWidget(titulo)
-        self.layout_tablas.addWidget(tabla)
-       
+            self.layout_tablas.addWidget(titulo)
+
+        # Mostrar el QScrollArea después de cargar los datos
+        self.scroll_area.show()
+        self.btn_close_data.show()
 
 
 if __name__ == '__main__':
