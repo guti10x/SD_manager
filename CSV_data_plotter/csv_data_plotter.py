@@ -49,16 +49,6 @@ class Ventana(QWidget):
         # PLANTILLA
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 60)
-
-        # IMG fondo
-        fondo = QLabel(self)
-        fondo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        ruta_script = os.path.dirname(os.path.abspath(__file__))  
-        ruta_imagen = os.path.join(ruta_script, 'assets/IMG_fondo.PNG') 
-        pixmap = QPixmap(ruta_imagen)  
-        pixmap = pixmap.scaled(self.size(), Qt.AspectRatioMode.IgnoreAspectRatio)
-        fondo.setPixmap(pixmap)
-        layout.addWidget(fondo)
         self.setLayout(layout)
 
         # TÍTULO
@@ -67,28 +57,43 @@ class Ventana(QWidget):
         titulo_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))  
         layout.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
 
-        # input de archivo CSV de datos
-        input_label = QLabel('Upload CSV file with data', self)
-        layout.addWidget(input_label, alignment=Qt.AlignmentFlag.AlignLeft)
+        # Crear un layout horizontal para la fila con el QLabel, QLineEdit y QPushButton
+        layout_fila = QHBoxLayout()
 
+        # Crear y añadir el QLabel
+        input_label = QLabel('Upload CSV:', self)
+        layout_fila.addWidget(input_label, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        # Crear y añadir el QLineEdit
         self.ruta_input = QLineEdit(self)
-        self.ruta_input.setAlignment(Qt.AlignmentFlag.AlignLeft)  
-        layout.addWidget(self.ruta_input)
+        self.ruta_input.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        layout_fila.addWidget(self.ruta_input)
+
+        # Crear y añadir el QPushButton
+        btn_subir_csv = QPushButton('Subir CSV', self)
+        btn_subir_csv.clicked.connect(self.abrir_dialogo_csv)
+        btn_subir_csv.setStyleSheet("padding: 5px 20px;")
+        layout_fila.addWidget(btn_subir_csv)
+
+        # Añadir el layout horizontal al layout principal
+        layout.addLayout(layout_fila)
 
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
-        # Botón para subir el archivo CSV
-        btn_subir_csv = QPushButton('Subir CSV', self)
-        btn_subir_csv.clicked.connect(self.abrir_dialogo_csv)
-        btn_subir_csv.setStyleSheet("padding: 5px 20px;") 
-        layout_botones.addWidget(btn_subir_csv)
+       
 
         # Espacio entre los botones
-        layout_botones.addSpacing(10)
+        # layout_botones.addSpacing(70)
 
         # Botón para cargar los datos del archivo
-        btn_cargar_datos = QPushButton('Cargar Datos', self)
+        btn_cargar_datos = QPushButton('visualize data', self)
+        btn_cargar_datos.clicked.connect(self.cargar_datos)
+        btn_cargar_datos.setStyleSheet("padding: 5px 20px;") 
+        layout_botones.addWidget(btn_cargar_datos)
+
+        # Botón para cargar los datos del archivo
+        btn_cargar_datos = QPushButton('Upload to Google Drive', self)
         btn_cargar_datos.clicked.connect(self.cargar_datos)
         btn_cargar_datos.setStyleSheet("padding: 5px 20px;") 
         layout_botones.addWidget(btn_cargar_datos)
@@ -114,12 +119,20 @@ class Ventana(QWidget):
         # Layout vertical para las tablas
         self.layout_tablas = QVBoxLayout()
 
-        # Agregar layout de botones al layout principal
-        layout.addLayout(layout_botones)
         layout.addLayout(self.layout_tablas)
 
         spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         layout.addItem(spacer)
+
+        # IMG fondo
+        fondo = QLabel(self)
+        fondo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ruta_script = os.path.dirname(os.path.abspath(__file__))  
+        ruta_imagen = os.path.join(ruta_script, 'assets/IMG_fondo.PNG') 
+        pixmap = QPixmap(ruta_imagen)  
+        pixmap = pixmap.scaled(self.size(), Qt.AspectRatioMode.IgnoreAspectRatio)
+        fondo.setPixmap(pixmap)
+        layout.addWidget(fondo)
 
     ruta_to_input = ""
 
@@ -136,14 +149,20 @@ class Ventana(QWidget):
         return
     
     def cargar_datos(self):
-        file_name =  self.ruta_to_input
+        file_name = self.ruta_to_input
+
+        # Crear etiqueta de título
+        titulo = QLabel("Engine Temperture")
+        titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        titulo.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
+
         if file_name:
             self.ruta_input = file_name  # Almacenar la ruta del archivo seleccionado
 
             # Crear tabla y cargar datos desde CSV
             tabla = QTableWidget()
-            tabla.setColumnCount(3)
-            tabla.setHorizontalHeaderLabels(['ID', 'Valor', 'Timestamp'])
+            tabla.setColumnCount(2)
+            tabla.setHorizontalHeaderLabels(['Timestamp', 'Valor'])
 
             with open(file_name, 'r', newline='') as csv_file:
                 csv_reader = csv.reader(csv_file)
@@ -152,12 +171,38 @@ class Ventana(QWidget):
 
             tabla.setRowCount(len(data))
 
-            for row, (id_, valor, timestamp) in enumerate(data):
-                tabla.setItem(row, 0, QTableWidgetItem(id_))
-                tabla.setItem(row, 1, QTableWidgetItem(valor))
-                tabla.setItem(row, 2, QTableWidgetItem(timestamp))
+            for row, line in enumerate(data):
+                if len(line) >= 3:
+                    valor = line[1]
+                    timestamp = line[2]
+                    item_timestamp = QTableWidgetItem(timestamp)
+                    item_valor = QTableWidgetItem(valor)
 
-            self.layout_tablas.addWidget(tabla)
+                    # Centrar el texto de las celdas
+                    item_timestamp.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    item_valor.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+
+                    tabla.setItem(row, 0, item_timestamp)
+                    tabla.setItem(row, 1, item_valor)
+
+            # Ajustar el ancho de la columna 'Timestamp'
+            tabla.setColumnWidth(0, 200)  # Ajusta este valor según sea necesario
+
+            # Establecer el alto y ancho de la tabla
+            altura_tabla = 300  # Ajusta esta altura según tus necesidades
+            ancho_tabla = 350
+
+            tabla.setFixedHeight(altura_tabla)
+            tabla.setFixedWidth(ancho_tabla)
+
+        else:
+            # Crear etiqueta de título
+            titulo = QLabel("No data to display")
+            titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            titulo.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
+        self.layout_tablas.addWidget(titulo)
+        self.layout_tablas.addWidget(tabla)
+       
 
 
 if __name__ == '__main__':
