@@ -2,7 +2,7 @@
 #                                                                                                                                    #
 #                           CSV DATA PLOTTER ANALYZER V1                                                                             # 
 #                                    05/07/2024                                                                                      #
-#                            By Daniel Gutiérrez Torres                                                                              #
+#                            By Daniel Gutiérrez Torres                                                                            #
 #                                                                                                                                    #    
 ######################################################################################################################################
 
@@ -12,6 +12,10 @@ import os
 from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QVBoxLayout, QWidget, QSizePolicy, QTableWidget, QTableWidgetItem, QSpacerItem, QScrollArea
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import numpy as np
+from statistics import mean, stdev
 
 
 class Ventana(QWidget):
@@ -37,7 +41,7 @@ class Ventana(QWidget):
     def initUI(self):
 
         # Configuración de la ventana
-        self.setGeometry(50, 50, 1100, 400) 
+        self.setGeometry(50, 50, 1100, 500) 
         self.setWindowTitle('CSV data plotter analyzer')
 
         # PLANTILLA
@@ -51,86 +55,97 @@ class Ventana(QWidget):
         titulo_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))  
         layout.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
 
-        # Crear un layout horizontal para la fila con el QLabel, QLineEdit y QPushButton
-        layout_fila = QHBoxLayout()
+        # Spacer para añadir espacio debajo de los botones
+        spacer1 = QSpacerItem(0, 25, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        layout.addItem(spacer1)
+
+        # INPUT CSV
+        input_ruta = QHBoxLayout()
+
+        input_ruta.addSpacing(120)
 
         # Crear y añadir el QLabel
         input_label = QLabel('Upload CSV:', self)
-        layout_fila.addWidget(input_label, alignment=Qt.AlignmentFlag.AlignLeft)
+        input_label.setStyleSheet("QLabel { font-size: 14px; }")
+        input_ruta.addWidget(input_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Crear y añadir el QLineEdit
         self.ruta_input = QLineEdit(self)
         self.ruta_input.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        layout_fila.addWidget(self.ruta_input)
+        input_ruta.addWidget(self.ruta_input)
 
         # Crear y añadir el QPushButton
         btn_subir_csv = QPushButton('Subir CSV', self)
         btn_subir_csv.clicked.connect(self.abrir_dialogo_csv)
         btn_subir_csv.setStyleSheet("padding: 5px 20px;")
-        layout_fila.addWidget(btn_subir_csv)
+        input_ruta.addWidget(btn_subir_csv)
+
+        input_ruta.addSpacing(50)
 
         # Añadir el layout horizontal al layout principal
-        layout.addLayout(layout_fila)
+        layout.addLayout(input_ruta)
 
+        # Spacer para añadir espacio debajo de los botones
+        spacer2 = QSpacerItem(0, 15, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        layout.addItem(spacer2)
+
+        #BOTONES
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
-        # Espacio entre los botones
-        # layout_botones.addSpacing(70)
+        # Espacio entre los botones 
+        layout_botones.addSpacing(170)
 
         # Botón para cargar los datos del archivo
-        btn_cargar_datos= QPushButton('visualize data', self)
+        btn_cargar_datos = QPushButton('Visualize Data', self)
         btn_cargar_datos.clicked.connect(self.cargar_datos)
-        btn_cargar_datos.setStyleSheet("padding: 5px 20px;") 
+        btn_cargar_datos.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }" "QPushButton:checked { font-weight: bold; }") 
         layout_botones.addWidget(btn_cargar_datos)
 
-        # Botón para cargar los datos del archivo
+        # Espacio entre los botones
+        layout_botones.addSpacing(50)
+
+        # Botón para subir datos a Google Drive
         btn_drive_upload = QPushButton('Upload to Google Drive', self)
-        btn_drive_upload.clicked.connect(self.cargar_datos)
-        btn_drive_upload.setStyleSheet("padding: 5px 20px;") 
+        btn_drive_upload.clicked.connect(self.upload_google_drive)
+        btn_drive_upload.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }") 
         layout_botones.addWidget(btn_drive_upload)
 
-        # Añadir espacio flexible después de los botones para empujarlos a la izquierda
-        layout_botones.addStretch(1)
+        # Espacio entre los botones
+        layout_botones.addSpacing(50)
+
+        # Botón para generar informe en PDF
+        btn_pdf = QPushButton('Generate PDF Report', self)
+        btn_pdf.clicked.connect(self.generate_pdf_report)
+        btn_pdf.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }")  
+        layout_botones.addWidget(btn_pdf)
+
+        # Espacio entre los botones
+        layout_botones.addSpacing(120)
 
         # Añadir el layout horizontal de los botones al layout principal
         layout.addLayout(layout_botones)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Crear layout horizontal
-        #layout_horizontal = QHBoxLayout()
-        # Iterar sobre los archivos csv y agregar checkboxes directamente
-        #for nombre_csv in self.archivos_csv:
-            #checkbox = QCheckBox(nombre_csv, self)
-            #checkbox.setChecked(True) 
-            #layout_horizontal.addWidget(checkbox)
-        #layout.addLayout(layout_horizontal)
+        # Spacer para añadir espacio debajo de los botones
+        spacer3 = QSpacerItem(0, 25, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        layout.addItem(spacer3)
 
-       
+        #OUTPUT GRÁFICAS Y TABLAS
 
         # Widget scrollable para las tablas
         self.scroll_content = QWidget()
         self.layout_tablas = QVBoxLayout(self.scroll_content)
         
-        # Crear un área de scroll y configurar el contenido
+        # Crear un área de scroll
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.scroll_content)
-        self.scroll_area.setFixedHeight(600)
+        self.scroll_area.setFixedHeight(620)
         self.scroll_area.hide()
 
         # Agregar el área de scroll al layout principal
         layout.addWidget(self.scroll_area)
-
-        spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        layout.addItem(spacer)
-
-        # Botón para cerrar scroll de datos
-        self.btn_close_data = QPushButton('Close', self)
-        self.btn_close_data.clicked.connect(self.close_data)
-        self.btn_close_data.setFixedSize(100, 30)  
-        self.btn_close_data.setStyleSheet("padding: 5px 20px;") 
-        self.btn_close_data.hide()
-        layout.addWidget(self.btn_close_data, alignment=Qt.AlignmentFlag.AlignRight)
 
         # IMG fondo
         self.backgroundLogo = QLabel(self)
@@ -142,6 +157,7 @@ class Ventana(QWidget):
         self.backgroundLogo.setPixmap(pixmap)
         layout.addWidget(self.backgroundLogo)
 
+
     ruta_to_input = ""
 
     def abrir_dialogo_csv(self):
@@ -151,15 +167,14 @@ class Ventana(QWidget):
         if archivo_csv:
             self.ruta_to_input = archivo_csv
             self.ruta_input.setText(archivo_csv)
-            print(f"Ruta del archivo seleccionado: {self.ruta_input}")
+            #print(f"Ruta del archivo seleccionado: {self.ruta_input}")
 
-    def crear_grafica(self, nombre):
+    def upload_google_drive(self, nombre):
         return
     
-    def close_data(self, nombre):
-        self.scroll_area.hide()
-        self.btn_close_data.hide()
-    
+    def generate_pdf_report(self, nombre):
+        return
+
     def cargar_datos(self):
         file_name = self.ruta_to_input
 
@@ -194,6 +209,8 @@ class Ventana(QWidget):
                 titulo.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
                 self.layout_tablas.addWidget(titulo)
 
+                h_layout = QHBoxLayout()  # Crear un layout horizontal para la tabla y la gráfica
+
                 tabla = QTableWidget()
                 tabla.setColumnCount(2)
                 tabla.setHorizontalHeaderLabels(['Timestamp', 'Valor'])
@@ -217,27 +234,43 @@ class Ventana(QWidget):
                 tabla.setColumnWidth(0, 200)
 
                 # Establecer el alto y ancho de la tabla
-                altura_tabla = 300
-                ancho_tabla = 350
+                altura_tabla = 450
+                ancho_tabla = 342
 
                 tabla.setFixedHeight(altura_tabla)
                 tabla.setFixedWidth(ancho_tabla)
 
-                # Agregar la tabla al layout
-                self.layout_tablas.addWidget(tabla)
+                # Agregar la tabla al layout horizontal
+                h_layout.addWidget(tabla)
+
+                # GRÁfICA
+                # Crear la gráfica asociada
+                x_data = [timestamp for timestamp, _ in data]
+                y_data = [float(valor) for _, valor in data]
+
+                fig = Figure(figsize=(4, 3))
+                ax = fig.add_subplot(111)
+                ax.plot(x_data, y_data, marker='o')
+
+                ax.set_xlabel('Time')
+                ax.set_ylabel('Value')
+
+                canvas = FigureCanvas(fig)
+                h_layout.addWidget(canvas)
+
+                # Agregar el layout horizontal al layout principal vertical
+                self.layout_tablas.addLayout(h_layout)
 
         else:
             # Crear etiqueta de título
-            titulo = QLabel("No hay datos para mostrar")
+            titulo = QLabel("No data to display")
             titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
             titulo.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
             self.layout_tablas.addWidget(titulo)
 
         # Mostrar el QScrollArea después de cargar los datos
         self.scroll_area.show()
-        self.btn_close_data.show()
-
-
+        
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ventana = Ventana()
