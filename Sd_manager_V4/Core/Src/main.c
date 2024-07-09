@@ -19,7 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
+
 #include <stdio.h>
+
+#include "sd_lib.h"
 
 
 /* Private includes ----------------------------------------------------------*/
@@ -29,14 +32,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+int case_index = 0;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-FATFS fs;        // File system object
-FIL fil[7];      // Array of 7 file objects
-
+FATFS fs;
 
 /* USER CODE END PD */
 
@@ -56,8 +57,6 @@ SPI_HandleTypeDef hspi1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
-void save_sd(int id, const char* value, const char* timestamp);
-void get_current_timestamp(char* buffer, size_t buffer_size);
 
 /* USER CODE BEGIN PFP */
 
@@ -101,16 +100,14 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
-  /* WRITE CSV FILE */
-  HAL_Delay(500);
+  /* WRITE TEST CSV FILE */
+  //HAL_Delay(500);
   //f_mount(&fs, "", 0);
-  //f_open(&fil, "file2.csv", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
+  //f_open(&fil, "filePrueba.csv", FA_OPEN_ALWAYS | FA_WRITE | FA_READ);
   //f_lseek(&fil, fil.fsize);
-  //f_puts("Dato1,Dato2,Dato3\n", &fil); // Añadir una fila con tres datos
+  //f_puts("Dato1,Dato2,Dato3\n", &fil);
   //f_close(&fil);
 
-  char timestamp[20];
-  int case_index = 0;
 
   // Montar el sistema de archivos
   if (f_mount(&fs, "", 0) != FR_OK) {
@@ -118,7 +115,7 @@ int main(void)
       Error_Handler();
   }
 
-  save_sd(0,"Restarted detected", timestamp);
+  save_sd(0,"MCU initialized", "timestamp");
 
 
   /* USER CODE END 2 */
@@ -127,7 +124,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+
 	 /* Toggle the LED */
 	 HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 	 HAL_Delay(200);
@@ -135,75 +132,45 @@ int main(void)
 	 switch (case_index) {
 	 	  case 0:
 	 		  //ID_Engine_temp
-	 		  save_sd(1, "Valor_Engine_temp", "timestamp");
+	 		  save_sd(1, "Engine_temp_Value", "timestamp");
 	 		  break;
 	 	  case 1:
 	 		  //Battery_volt
-	 		  save_sd(2, "Valor_Battery_volt", "timestamp");
+	 		  save_sd(2, "Valor_Battery_volt_Value", "timestamp");
 	 		  break;
 	 	  case 2:
 	 		  //Speed
-	 		  save_sd(3, "Valor_Speed", "timestamp");
+	 		  save_sd(3, "Valor_Speed_Value", "timestamp");
 	 		  break;
 	 	  case 3:
 	 		  //Gear
-	 		  save_sd(4, "Valor_Gear", "timestamp");
+	 		  save_sd(4, "Valor_Gear_Value", "timestamp");
 	 		  break;
 	 	  case 4:
 	 		  //RPMs
-	 		  save_sd(5, "Valor_RPM", "timestamp");
+	 		  save_sd(5, "Valor_RPM_Value", "timestamp");
 	 		  break;
 	 	  case 5:
 	 		  //Brake_pedal
-	 		  save_sd(6, "Valor_Brake_pedal", "timestamp" );
+	 		  save_sd(6, "Valor_Brake_pedal_Value", "timestamp" );
 	 		  break;
 	 	  case 6:
 	 		  //Accel_pedal
-	 		  save_sd(7,"Valor_Accel_pedal", "timestamp");
+	 		  save_sd(7,"Valor_Accel_pedal_Value", "timestamp");
 	 		  break;
 	 	  default:
 	 		  // Manejar el caso por defecto si case_index está fuera de rango
 	 		  Error_Handler();
 	 		  break;
 	   }
+	case_index++;
+	if (case_index == 7) {
+	    case_index = 0;
+	}
 
-    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
-
-void save_sd(int id, const char* value, const char* timestamp) {
-    FIL fil;  // Variable local para manejar el archivo data.csv
-    char buffer[256]; // Buffer para la línea que se va a escribir
-
-    // Abrir el archivo data.csv
-    if (f_open(&fil, "data.csv", FA_OPEN_ALWAYS | FA_WRITE) != FR_OK) {
-        // Manejar el error de apertura o creación del archivo
-        Error_Handler();
-        return; // Salir de la función si falla la apertura del archivo
-    }
-
-    // Posicionarse al final del archivo para añadir datos
-    if (f_lseek(&fil, f_size(&fil)) != FR_OK) {
-        // Manejar el error de lseek
-        f_close(&fil);
-        Error_Handler();
-        return; // Salir de la función si falla el posicionamiento
-    }
-
-    // Escribir el id, value y timestamp en una sola línea
-    snprintf(buffer, sizeof(buffer), "%d, %s, %s\n", id, value, timestamp);
-    if (f_puts(buffer, &fil) == EOF) {
-        // Manejar el error de escritura
-        f_close(&fil);
-        Error_Handler();
-        return; // Salir de la función si falla la escritura
-    }
-
-    // Cerrar el archivo
-    f_close(&fil);
-}
-
 
 /**
   * @brief System Clock Configuration
