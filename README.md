@@ -1,33 +1,36 @@
-# SD MANAGER: 
-#### Proyecto de ejemplo desarrollado en STM32CubeIDE para guardar datos en fromato CSV y TXT en una tarjeta SD
+# SD Manager
 
-## Esquema de conexiones:
-![esquema_conexiones_sd_p1](https://github.com/guti10x/SD_manager/assets/82153822/59fc2bb2-901b-4948-96a2-d676cf8a941c)
-![esquema_conexiones_sd_p2](https://github.com/guti10x/SD_manager/assets/82153822/e0d491bb-a936-49f1-b9cb-f4eab4eb6b4b)
+Este repositorio ofrece las herramientas para la recopilación y análisis de las mediciones de los difenrentes sensores del coche de Formula Student en formato CSV, incluyendo:
 
-## Configuración de FatFs y la placa STM32F103C8T6
-#### Consulta la web: https://www.micropeta.com/video29#google_vignette
-    
-## Importación y uso de la la libreria para guardar datos:
-1. Incluir la biblioteca `sd_lib.h`:
-    ```c
-    #include "sd_lib.h
-    ```
-2. Habilitar el controlador SPI `hspi1`:
-    ```c
-    SPI_HandleTypeDef hspi1;
-    ```
-    *Si utilizas un controlador SPI diferente, asegúrate de modificar el encabezado de la biblioteca `sd_lib.h ` para reflejar el cambio.
+- **Librería `sd_nextion_lib`**: permite el almacenamiento de datos en tarjetas microSD y la verificación de su integridad.
+- **Proyecto de Ejemplo (`Sd_manager_V4`)**: Muestra cómo utilizar la librería para guardar datos en formato CSV y TXT en una tarjeta SD.
+- **Aplicación `CSV_data_plotter`**: Permite analizar y visualizar los datos almacenados, generando gráficos detallados, informes en PDF personalizados, exportando a Excel y, opcionalmente, subiendo los datos a la nube.
 
-4. Configuras dentro del main el sistema de archivos en la tarjeta SD:
-    ```c
-    if (f_mount(&fs, "", 0) != FR_OK) {
-      // Manejar el error de montaje del sistema de archivos
-      Error_Handler();
-    }
-    ```
+## Esquema del proyecto
 
-5. LLamada y uso de la función para guardar datos en la sd:
-   ```c
-      save_sd(0,"MCU initialized", "timestamp");
-   ```
+![FUEdddM_cawr](https://github.com/user-attachments/assets/f10d98f6-897c-469b-9498-7722667f4c01)
+
+## Desarrolo del contenido del Repositorio
+
+### `sd_nextion_lib`
+Esta librería facilita el almacenamiento de datos en formato CSV en tarjetas microSD y proporciona una función para verificar la integridad del almacenamiento en la memoria externa. Está diseñada para su uso en la placa Nexus (STM32F103R8T6) del monoplaza, permitiendo recopilar en un único archivo CSV todos los valores medidos por los distintos sensores del coche. El objetivo es almacenar estos datos para su posterior análisis detallado utilizando la herramienta `CSV_data_plotter`, que permite realizar estudios estadísticos y generar gráficas detalladas de los datos recopilados.
+
+
+- **Instalación:**
+  Consulta el manual de instalación y configuración de la biblioteca en STM32CubeIDE en el [Manual de Instalación de nextion_comunication_lib](sd_nextion_lib/doc/Manual_de_instalación_y_configuración_sd_nextion_lib.pdf).
+
+- **Documentación:**
+  Para obtener más información sobre cómo utilizar la librería y sus características, revisa la [Documentación de nextion_comunication_lib](./sd_nextion_lib/doc/Documentación%20sd_nextion_lib.pdf).
+
+### `Sd_manager_V4`
+Proyecto de ejemplo desarrollado en STM32CubeIDE que implementa la librería `sd_nextion_lib`. En el se muestra cómo utlizar las funciones para guardar datos en formato CSV y TXT en una tarjeta SD, asi como el uso de una función que garantiza el correcto almacenamiento de los datos en la memoria micorSd.
+
+### `CSV_data_plotter`
+Aplicación diseñada para analizar los datos almacenados en la tarjeta microSD provenientes de diversos sensores del coche. Esta herramienta facilita la realización de estudios estadísticos detallados sobre los datos recopilados. Ofrece funcionalidades para:
+
+- **Generar Gráficas Detalladas**: Visualiza los datos en gráficos para una mejor comprensión.
+- **Crear PDFs Personalizados**: Exporta informes en PDF con gráficos y datos personalizados.
+- **Generar Archivos Excel**: Exporta los datos a formatos Excel para un análisis adicional.
+- **Subir Datos a la Nube**: (Opcional) Permite la carga de datos a plataformas en la nube para un acceso y análisis más amplio.
+
+![Captura de pantalla 2024-07-19 101ddd511](https://github.com/user-attachments/assets/52d21063-2dba-485c-aece-e8617ef51cc9)
