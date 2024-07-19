@@ -1,0 +1,2 @@
+../Core/Src/sd_nextion_lib.c:15:6:save_sd	4432	static
+../Core/Src/sd_nextion_lib.c:56:5:verificarSd	4160	static
