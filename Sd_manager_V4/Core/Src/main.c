@@ -118,6 +118,13 @@ int main(void)
   save_sd(0,"MCU initialized", "timestamp");
 
 
+  if (verificarSd("data.csv") == 1) {
+	  printf("OK: Se pudo acceder a data.csv\n");
+  } else {
+	  // Manejar el error: archivo no disponible
+	  printf("KO: No se pudo acceder a data.csv\n");
+  }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
