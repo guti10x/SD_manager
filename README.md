@@ -33,4 +33,5 @@ Aplicación diseñada para analizar los datos almacenados en la tarjeta microSD 
 - **Generar Archivos Excel**: Exporta los datos a formatos Excel para un análisis adicional.
 - **Subir Datos a la Nube**: (Opcional) Permite la carga de datos a plataformas en la nube para un acceso y análisis más amplio.
 
-![Captura de pantalla 2024-07-19 101ddd511](https://github.com/user-attachments/assets/52d21063-2dba-485c-aece-e8617ef51cc9)
+![Captura de pantalla 2024-07-19 101ddd511](https://github.com/user-attachments/assets/acea53e0-7292-4773-b677-39b1eff41f2e)
+
