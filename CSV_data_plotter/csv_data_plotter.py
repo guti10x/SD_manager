@@ -2,14 +2,14 @@
 #                                                                                                                                    #
 #                           CSV DATA PLOTTER ANALYZER V1                                                                             # 
 #                                    05/07/2024                                                                                      #
-#                            By Daniel Gutiérrez Torres                                                                            #
+#                            By Daniel Gutiérrez Torres                                                                              #
 #                                                                                                                                    #    
 ######################################################################################################################################
 
 import csv
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QVBoxLayout, QWidget, QSizePolicy, QTableWidget, QTableWidgetItem, QSpacerItem, QScrollArea, QMessageBox
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QVBoxLayout, QWidget, QSizePolicy, QTableWidget, QTableWidgetItem, QSpacerItem, QScrollArea, QMessageBox, QFrame
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
 from matplotlib.figure import Figure
@@ -92,7 +92,7 @@ class Ventana(QWidget):
         spacer2 = QSpacerItem(0, 15, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer2)
 
-        #BOTONES
+        # BOTONES OPCIONES ############################################################################################################
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
@@ -142,6 +142,81 @@ class Ventana(QWidget):
         # Spacer para añadir espacio debajo de los botones
         spacer3 = QSpacerItem(0, 25, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer3)
+
+
+        # Contenedor para los elementos del generador de Excel
+        excel_container_frame = QFrame(self)  # Usamos QFrame para aplicar borde
+        excel_container_layout = QVBoxLayout(excel_container_frame)
+
+        # Estilos para el contenedor de Excel
+        excel_container_frame.setStyleSheet(""" 
+            QFrame {
+                margin-right: 100px;       
+                margin-left: 100px;  
+                border: 2px solid #FF0000; 
+                border-radius: 8px;       
+                padding: 10px;           
+                background-color: #FFFFFF;
+            }
+        """)
+
+        excel_container_layout.setContentsMargins(10, 10, 10, 10)
+        excel_container_layout.setSpacing(10)
+
+        # Sub-layout para el nombre del archivo ##########################################################
+        file_input_layout = QHBoxLayout()
+        file_input_layout.setContentsMargins(0, 0, 0, 0)  # Sin márgenes
+        file_input_layout.setSpacing(10)  # Espacio entre los elementos
+
+        # Etiqueta para el nombre del archivo
+        file_name_label = QLabel('Nombre del archivo Excel:', self)
+        file_name_label.setStyleSheet("font-size: 16px; margin:0; border: none; font-weight: bold; color: #333;")
+        file_input_layout.addWidget(file_name_label)
+
+        # Campo de texto para ingresar el nombre del archivo
+        self.file_name_input = QLineEdit(self)
+        self.file_name_input.setPlaceholderText("Ingrese nombre")
+        self.file_name_input.setStyleSheet("padding: 5px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;")
+        file_input_layout.addWidget(self.file_name_input)
+
+        # Añadir el sub-layout de entrada al contenedor de Excel
+        excel_container_layout.addLayout(file_input_layout)
+
+        # Checkbox para añadir fecha al nombre ##########################################################
+        checkbox_layout = QHBoxLayout()
+        checkbox_layout.setSpacing(10)
+
+        self.timestamp_checkbox = QCheckBox("Añadir fecha al nombre del archivo", self)
+        self.timestamp_checkbox.setStyleSheet("margin-left:15px; font-size: 16px; color: #555;")
+        checkbox_layout.addWidget(self.timestamp_checkbox)
+
+        # Añadir el sub-layout del checkbox al contenedor de Excel
+        excel_container_layout.addLayout(checkbox_layout)
+
+        # Sub-layout para el botón de generación del excell ##############################################
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        # Botón para generar el archivo Excel
+        self.generate_button = QPushButton('Generar Excel', self)
+        self.generate_button.clicked.connect(self.generate_excel_report)
+        self.generate_button.setStyleSheet("padding: 10px 20px; font-size: 14px; background-color: #E41B12; color: white; border: none; border-radius: 4px; margin-left: 15px; margin-top:20px;")
+
+        button_layout.addWidget(self.generate_button, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        # Añadir el sub-layout del botón al contenedor de Excel
+        excel_container_layout.addLayout(button_layout)
+
+        # Sub-layout mensajes de error/exito ###############################################################
+        self.message_label_xlsx = QLabel('', self)
+        self.message_label_xlsx.setStyleSheet("font-size: 16px; border: none; color: #333;")
+        self.message_label_xlsx.hide()
+        excel_container_layout.addWidget(self.message_label_xlsx)
+
+
+        # Añadir el contenedor de Excel al layout principal
+        layout.addWidget(excel_container_frame)
+
 
         #OUTPUT GRÁFICAS Y TABLAS
 
