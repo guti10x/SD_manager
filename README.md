@@ -8,7 +8,8 @@ Este repositorio ofrece las herramientas para la recopilación y análisis de la
 
 ## Esquema del proyecto
 
-![FUEdddM_cawr](https://github.com/user-attachments/assets/f10d98f6-897c-469b-9498-7722667f4c01)
+![FUEdddM_cawr](https://github.com/user-attachments/assets/caed8593-ae45-4999-9ca5-03207b536eb0)
+
 
 ## Desarrolo del contenido del Repositorio
 
