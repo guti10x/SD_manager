@@ -119,7 +119,7 @@ class Ventana(QWidget):
 
         # Botón para generar informe en Excel
         btn_pdf = QPushButton('Generate Excel', self)
-        btn_pdf.clicked.connect(self.generate_excel_report)
+        btn_pdf.clicked.connect(self.show_excel_report)
         btn_pdf.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }")  
         layout_botones.addWidget(btn_pdf)
 
@@ -144,12 +144,14 @@ class Ventana(QWidget):
         layout.addItem(spacer3)
 
 
+        # LAYOUTS PARA AJUSTES DE FUNCIONALIDADES DE CADA BOTÓN ############################################################################################################
+
         # Contenedor para los elementos del generador de Excel
-        excel_container_frame = QFrame(self)  # Usamos QFrame para aplicar borde
-        excel_container_layout = QVBoxLayout(excel_container_frame)
+        self.excel_container_frame = QFrame(self)  # Usamos QFrame para aplicar borde
+        self.excel_container_layout = QVBoxLayout(self.excel_container_frame)
 
         # Estilos para el contenedor de Excel
-        excel_container_frame.setStyleSheet(""" 
+        self.excel_container_frame.setStyleSheet(""" 
             QFrame {
                 margin-right: 100px;       
                 margin-left: 100px;  
@@ -160,8 +162,8 @@ class Ventana(QWidget):
             }
         """)
 
-        excel_container_layout.setContentsMargins(10, 10, 10, 10)
-        excel_container_layout.setSpacing(10)
+        self.excel_container_layout.setContentsMargins(10, 10, 10, 10)
+        self.excel_container_layout.setSpacing(10)
 
         # Sub-layout para el nombre del archivo ##########################################################
         file_input_layout = QHBoxLayout()
@@ -169,18 +171,18 @@ class Ventana(QWidget):
         file_input_layout.setSpacing(10)  # Espacio entre los elementos
 
         # Etiqueta para el nombre del archivo
-        file_name_label = QLabel('Nombre del archivo Excel:', self)
+        file_name_label = QLabel('Nombre del archivo:', self)
         file_name_label.setStyleSheet("font-size: 16px; margin:0; border: none; font-weight: bold; color: #333;")
         file_input_layout.addWidget(file_name_label)
 
         # Campo de texto para ingresar el nombre del archivo
         self.file_name_input = QLineEdit(self)
-        self.file_name_input.setPlaceholderText("Ingrese nombre")
+        self.file_name_input.setPlaceholderText("Ingrese un nombre")
         self.file_name_input.setStyleSheet("padding: 5px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;")
         file_input_layout.addWidget(self.file_name_input)
 
         # Añadir el sub-layout de entrada al contenedor de Excel
-        excel_container_layout.addLayout(file_input_layout)
+        self.excel_container_layout.addLayout(file_input_layout)
 
         # Checkbox para añadir fecha al nombre ##########################################################
         checkbox_layout = QHBoxLayout()
@@ -191,7 +193,7 @@ class Ventana(QWidget):
         checkbox_layout.addWidget(self.timestamp_checkbox)
 
         # Añadir el sub-layout del checkbox al contenedor de Excel
-        excel_container_layout.addLayout(checkbox_layout)
+        self.excel_container_layout.addLayout(checkbox_layout)
 
         # Sub-layout para el botón de generación del excell ##############################################
         button_layout = QHBoxLayout()
@@ -205,17 +207,18 @@ class Ventana(QWidget):
         button_layout.addWidget(self.generate_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Añadir el sub-layout del botón al contenedor de Excel
-        excel_container_layout.addLayout(button_layout)
+        self.excel_container_layout.addLayout(button_layout)
 
         # Sub-layout mensajes de error/exito ###############################################################
         self.message_label_xlsx = QLabel('', self)
-        self.message_label_xlsx.setStyleSheet("font-size: 16px; border: none; color: #333;")
+        self.message_label_xlsx.setStyleSheet("font-size: 16px; margin:0; border: none; color: #333;")
         self.message_label_xlsx.hide()
-        excel_container_layout.addWidget(self.message_label_xlsx)
+        self.excel_container_layout.addWidget(self.message_label_xlsx, alignment=Qt.AlignmentFlag.AlignLeft)
 
 
         # Añadir el contenedor de Excel al layout principal
-        layout.addWidget(excel_container_frame)
+        layout.addWidget(self.excel_container_frame)
+        self.toggle_excel_container(False)
 
 
         #OUTPUT GRÁFICAS Y TABLAS
@@ -244,7 +247,7 @@ class Ventana(QWidget):
         self.backgroundLogo.setPixmap(pixmap)
         layout.addWidget(self.backgroundLogo)
 
-    ruta_to_input = ""
+    ruta_to_input = None
 
     def abrir_dialogo_csv(self):
         # Abrir un diálogo para seleccionar archivo CSV
@@ -255,41 +258,75 @@ class Ventana(QWidget):
             self.ruta_input.setText(archivo_csv)
             #print(f"Ruta del archivo seleccionado: {self.ruta_input}")
 
+    def toggle_excel_container(self, visible):
+        self.excel_container_frame.setVisible(visible)
+
+    def show_excel_report(self):
+        self.toggle_excel_container(True)
+
     def generate_excel_report(self):
+        # Asegúrate de que el mensaje de error se oculte inicialmente
+        self.message_label_xlsx.hide()
+
         if self.ruta_to_input is None:
-            return  # O podrías optar por lanzar una excepción si lo prefieres
+            self.message_label_xlsx.setText("¡Selecciona un archivo CSV!")
+            self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
+            self.message_label_xlsx.show()
+            return 
 
-        # Leer el archivo CSV
-        self.csv_data = pd.read_csv(self.ruta_to_input, header=None, names=['ID', 'Value', 'Timestamp'])
+        file_name = self.file_name_input.text().strip()  # Obtiene el texto y elimina espacios en blanco
 
-        with pd.ExcelWriter('output.xlsx', engine='openpyxl') as writer:
-            # Bandera para verificar si se añadió al menos una hoja
-            sheet_added = False
+        # Verificar si el campo de texto está vacío
+        if not file_name:
+            self.message_label_xlsx.setText("¡Nombre del excel a generar no inicializado !")
+            self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
+            self.message_label_xlsx.show()
+            return 
+
+        try:
+            # Leer el archivo CSV
+            self.csv_data = pd.read_csv(self.ruta_to_input, header=None, names=['ID', 'Value', 'Timestamp'])
             
-            for param_id, param_name in self.ID_TO_PARAM.items():
-                # Filtrar los datos por ID
-                df_filtered = self.csv_data[self.csv_data['ID'] == param_id]
-                if not df_filtered.empty:
-                    # Renombrar la columna 'Value' a nombre del parámetro
-                    df_filtered = df_filtered[['Value', 'Timestamp']]
-                    df_filtered.rename(columns={'Value': param_name}, inplace=True)
-                    # Escribir en la hoja correspondiente
-                    df_filtered.to_excel(writer, sheet_name=param_name, index=False)
-                    sheet_added = True
-            
-            # Si no se ha añadido ninguna hoja, agregar una hoja predeterminada
-            if not sheet_added:
-                pd.DataFrame({'Message': ['No data available for the given parameters']}).to_excel(writer, sheet_name='No Data', index=False)
+            with pd.ExcelWriter(f'{file_name}.xlsx', engine='openpyxl') as writer:
+                # Bandera para verificar si se añadió al menos una hoja
+                sheet_added = False
+                
+                for param_id, param_name in self.ID_TO_PARAM.items():
+                    # Filtrar los datos por ID
+                    df_filtered = self.csv_data[self.csv_data['ID'] == param_id]
+                    if not df_filtered.empty:
+                        # Renombrar la columna 'Value' a nombre del parámetro
+                        df_filtered = df_filtered[['Value', 'Timestamp']]
+                        df_filtered.rename(columns={'Value': param_name}, inplace=True)
+                        # Escribir en la hoja correspondiente
+                        df_filtered.to_excel(writer, sheet_name=param_name, index=False)
+                        sheet_added = True
+                
+                # Si no se ha añadido ninguna hoja, agregar una hoja predeterminada
+                if not sheet_added:
+                    pd.DataFrame({'Message': ['No data available for the given parameters']}).to_excel(writer, sheet_name='No Data', index=False)
 
-        # Abrir el archivo de nuevo para modificar el estilo
-        workbook = load_workbook('output.xlsx')
-        for sheet_name in workbook.sheetnames:
-            sheet = workbook[sheet_name]
-            for row in sheet.iter_rows():
-                for cell in row:
-                    cell.alignment = Alignment(horizontal='center', vertical='center')
+            # Abrir el archivo de nuevo para modificar el estilo
+            workbook = load_workbook('output.xlsx')
+            for sheet_name in workbook.sheetnames:
+                sheet = workbook[sheet_name]
+                for row in sheet.iter_rows():
+                    for cell in row:
+                        cell.alignment = Alignment(horizontal='center', vertical='center')
 
-        workbook.save('output.xlsx')
+            workbook.save('output.xlsx')
+
+            # Mostrar mensaje de éxito
+            self.message_label_xlsx.setText("¡Archivo generado exitosamente!")
+            self.message_label_xlsx.setStyleSheet("color: #4CAF50; border: none; margin:0; font-size: 16px;")
+            self.message_label_xlsx.show()
+
+        except Exception as e:
+            # Mostrar mensaje de error en caso de excepción
+            self.message_label_xlsx.setText(f"Error: {str(e)}")
+            self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
+            self.message_label_xlsx.show()
+
         
     def upload_google_drive(self, nombre):
         return
