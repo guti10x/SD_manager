@@ -9,30 +9,33 @@
 import csv
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QVBoxLayout, QWidget, QSizePolicy, QTableWidget, QTableWidgetItem, QSpacerItem, QScrollArea
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QVBoxLayout, QWidget, QSizePolicy, QTableWidget, QTableWidgetItem, QSpacerItem, QScrollArea, QMessageBox
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 from statistics import mean, stdev
-
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment
 
 class Ventana(QWidget):
 
     def __init__(self):
         super().__init__()
 
-        # Lista de nombres de archivos CSV sin la extensión
-        self.archivos_csv = [
-            "Accel_pedal",
-            "Battery_volt",
-            "Brake_pedal",
-            "Engine_temp",
-            "Gear",
-            "RPM",
-            "Speed"
-        ]
+        # equivalencias ID <-> parámetro
+        self.ID_TO_PARAM = {
+            1: 'engine_temp_value',
+            2: 'Batery_volt_value',
+            3: 'brake1_temp_value',
+            4: 'brake2_temp_value',
+            5: 'brake3_temp_value',
+            6: 'brake4_temp_value',
+            7: 'gear_value',
+            8: 'speed_value',
+        }
 
         self.graficas = {} 
 
@@ -114,8 +117,17 @@ class Ventana(QWidget):
         # Espacio entre los botones
         layout_botones.addSpacing(50)
 
+        # Botón para generar informe en Excel
+        btn_pdf = QPushButton('Generate Excel', self)
+        btn_pdf.clicked.connect(self.generate_excel_report)
+        btn_pdf.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }")  
+        layout_botones.addWidget(btn_pdf)
+
+        # Espacio entre los botones
+        layout_botones.addSpacing(50)
+
         # Botón para generar informe en PDF
-        btn_pdf = QPushButton('Generate PDF Report', self)
+        btn_pdf = QPushButton('Generate PDF', self)
         btn_pdf.clicked.connect(self.generate_pdf_report)
         btn_pdf.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }")  
         layout_botones.addWidget(btn_pdf)
@@ -157,7 +169,6 @@ class Ventana(QWidget):
         self.backgroundLogo.setPixmap(pixmap)
         layout.addWidget(self.backgroundLogo)
 
-
     ruta_to_input = ""
 
     def abrir_dialogo_csv(self):
@@ -169,6 +180,42 @@ class Ventana(QWidget):
             self.ruta_input.setText(archivo_csv)
             #print(f"Ruta del archivo seleccionado: {self.ruta_input}")
 
+    def generate_excel_report(self):
+        if self.ruta_to_input is None:
+            return  # O podrías optar por lanzar una excepción si lo prefieres
+
+        # Leer el archivo CSV
+        self.csv_data = pd.read_csv(self.ruta_to_input, header=None, names=['ID', 'Value', 'Timestamp'])
+
+        with pd.ExcelWriter('output.xlsx', engine='openpyxl') as writer:
+            # Bandera para verificar si se añadió al menos una hoja
+            sheet_added = False
+            
+            for param_id, param_name in self.ID_TO_PARAM.items():
+                # Filtrar los datos por ID
+                df_filtered = self.csv_data[self.csv_data['ID'] == param_id]
+                if not df_filtered.empty:
+                    # Renombrar la columna 'Value' a nombre del parámetro
+                    df_filtered = df_filtered[['Value', 'Timestamp']]
+                    df_filtered.rename(columns={'Value': param_name}, inplace=True)
+                    # Escribir en la hoja correspondiente
+                    df_filtered.to_excel(writer, sheet_name=param_name, index=False)
+                    sheet_added = True
+            
+            # Si no se ha añadido ninguna hoja, agregar una hoja predeterminada
+            if not sheet_added:
+                pd.DataFrame({'Message': ['No data available for the given parameters']}).to_excel(writer, sheet_name='No Data', index=False)
+
+        # Abrir el archivo de nuevo para modificar el estilo
+        workbook = load_workbook('output.xlsx')
+        for sheet_name in workbook.sheetnames:
+            sheet = workbook[sheet_name]
+            for row in sheet.iter_rows():
+                for cell in row:
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        workbook.save('output.xlsx')
+        
     def upload_google_drive(self, nombre):
         return
     
