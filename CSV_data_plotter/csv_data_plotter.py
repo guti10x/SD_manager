@@ -51,39 +51,54 @@ class Ventana(QWidget):
 
         # PLANTILLA DE LA VENTANA ############################################################################################################
         layout = QVBoxLayout()
-        layout.setContentsMargins(20, 20, 20, 60)
         self.setLayout(layout)
 
-        # TÍTULO #############################################################################################################################
+         # TÍTULO #############################################################################################################################
         titulo_label = QLabel('CSV Data Plotter Analyzer', self)
         titulo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-        titulo_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))  
+        titulo_label.setFont(QFont('Arial', 24, QFont.Weight.Bold))  
         layout.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
 
         # Spacer para añadir espacio debajo de los botones
-        spacer1 = QSpacerItem(0, 25, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        spacer1 = QSpacerItem(0, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer1)
 
         # INPUT RUTA CSV ####################################################################################################################
         input_ruta = QHBoxLayout()
 
-        input_ruta.addSpacing(120)
+        input_ruta.addSpacing(60)
 
         # Crear y añadir el QLabel
-        input_label = QLabel('Upload CSV:', self)
-        input_label.setStyleSheet("QLabel { font-size: 14px; }")
+        input_label = QLabel('Path to the CSV file:', self)
+        input_label.setStyleSheet("font-size: 17px;")
         input_ruta.addWidget(input_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Crear y añadir el QLineEdit
         self.ruta_input = QLineEdit(self)
+        self.ruta_input.setPlaceholderText("Enter file path")
+        self.ruta_input.setStyleSheet("padding: 5px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;")
         self.ruta_input.setAlignment(Qt.AlignmentFlag.AlignLeft)
         input_ruta.addWidget(self.ruta_input)
 
         # Crear y añadir el QPushButton
-        btn_subir_csv = QPushButton('Subir CSV', self)
+        btn_subir_csv = QPushButton('Select CSV File', self)
         btn_subir_csv.clicked.connect(self.abrir_dialogo_csv)
-        btn_subir_csv.setStyleSheet("padding: 5px 20px;")
-        input_ruta.addWidget(btn_subir_csv)
+        btn_subir_csv.setStyleSheet(
+            "background-color: #000000; color: white; padding: 6px 20px; border: 2px solid #000000; border-radius: 5px; "
+            "font-size: 14px; text-align: center;"
+            "transition: background-color 0.3s, transform 0.2s;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #BF3F29;"
+            "border-color: #FFFFFF;"  # Cambia el color del borde en hover
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #A7301C;"
+            "transform: scale(0.95);"
+            "border-color: #FFFFFF;"  # Cambia el color del borde al hacer clic
+            "}"
+        )
+        input_ruta.addWidget(btn_subir_csv) 
 
         input_ruta.addSpacing(50)
 
@@ -94,44 +109,88 @@ class Ventana(QWidget):
         spacer2 = QSpacerItem(0, 15, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer2)
 
-        # BOTONES OPCIONES ############################################################################################################
+         # BOTONES OPCIONES ############################################################################################################
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
-        # Espacio entre los botones 
+        # Espacio entre los botones
         layout_botones.addSpacing(170)
 
         # Botón para cargar los datos del archivo
         btn_cargar_datos = QPushButton('Visualize Data', self)
         btn_cargar_datos.clicked.connect(self.cargar_datos)
-        btn_cargar_datos.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }" "QPushButton:checked { font-weight: bold; }") 
+        btn_cargar_datos.setStyleSheet(
+            "background-color: #E41B12; color: white; padding: 10px 20px; border-radius: 5px; "
+            "font-size: 14px; border: none; text-align: center;"
+            "transition: background-color 0.3s, transform 0.2s;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #BF3F29;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #A7301C;"
+            "transform: scale(0.95);"
+            "}")  # Botón rojo con efectos de hover y click
         layout_botones.addWidget(btn_cargar_datos)
 
         # Espacio entre los botones
         layout_botones.addSpacing(50)
 
         # Botón para comparar datos 
-        btn_compare = QPushButton('Compare data', self)
+        btn_compare = QPushButton('Compare Data', self)
         btn_compare.clicked.connect(self.compare_data)
-        btn_compare.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }") 
+        btn_compare.setStyleSheet(
+            "background-color: #E41B12; color: white; padding: 10px 20px; border-radius: 5px; "
+            "font-size: 14px; border: none; text-align: center;"
+            "transition: background-color 0.3s, transform 0.2s;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #BF3F29;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #A7301C;"
+            "transform: scale(0.95);"
+            "}")  # Botón rojo con efectos de hover y click
         layout_botones.addWidget(btn_compare)
 
         # Espacio entre los botones
         layout_botones.addSpacing(50)
 
         # Botón para generar informe en Excel
-        btn_pdf = QPushButton('Generate Excel', self)
-        btn_pdf.clicked.connect(self.show_excel_report)
-        btn_pdf.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }")  
-        layout_botones.addWidget(btn_pdf)
+        btn_excel = QPushButton('Generate Excel', self)
+        btn_excel.clicked.connect(self.show_excel_report)
+        btn_excel.setStyleSheet(
+            "background-color: #E41B12; color: white; padding: 10px 20px; border-radius: 5px; "
+            "font-size: 14px; border: none; text-align: center;"
+            "transition: background-color 0.3s, transform 0.2s;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #BF3F29;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #A7301C;"
+            "transform: scale(0.95);"
+            "}")  # Botón rojo con efectos de hover y click
+        layout_botones.addWidget(btn_excel)
 
         # Espacio entre los botones
         layout_botones.addSpacing(50)
 
         # Botón para generar informe en PDF
         btn_pdf = QPushButton('Generate PDF', self)
-        btn_pdf.clicked.connect(self.generate_pdf_report)
-        btn_pdf.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }")  
+        btn_pdf.clicked.connect(self.close_desplegables)
+        btn_pdf.setStyleSheet(
+            "background-color: #E41B12; color: white; padding: 10px 20px; border-radius: 5px; "
+            "font-size: 14px; border: none; text-align: center;"
+            "transition: background-color 0.3s, transform 0.2s;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #BF3F29;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #A7301C;"
+            "transform: scale(0.95);"
+            "}")  # Botón rojo con efectos de hover y click
         layout_botones.addWidget(btn_pdf)
 
         # Espacio entre los botones
@@ -142,7 +201,7 @@ class Ventana(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Spacer para añadir espacio debajo de los botones
-        spacer3 = QSpacerItem(0, 25, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        spacer3 = QSpacerItem(0, 18, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer3)
 
 
@@ -179,7 +238,7 @@ class Ventana(QWidget):
 
         # Campo de texto para ingresar el nombre del archivo
         self.file_name_input = QLineEdit(self)
-        self.file_name_input.setPlaceholderText("Ingrese un nombre")
+        self.file_name_input.setPlaceholderText("Enter a file name")
         self.file_name_input.setStyleSheet("padding: 5px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;")
         file_input_layout.addWidget(self.file_name_input)
 
@@ -217,13 +276,12 @@ class Ventana(QWidget):
         self.message_label_xlsx.hide()
         self.excel_container_layout.addWidget(self.message_label_xlsx, alignment=Qt.AlignmentFlag.AlignLeft)
 
-
         # Añadir el contenedor de Excel al layout principal
         layout.addWidget(self.excel_container_frame)
         self.toggle_excel_container(False)
 
 
-        #OUTPUT GRÁFICAS Y TABLAS
+        # LAYOUT GRÁFICAS INDIVIDUALES Y TABLAS ############################################################################################################
 
         # Widget scrollable para las tablas
         self.scroll_content = QWidget()
@@ -238,6 +296,12 @@ class Ventana(QWidget):
 
         # Agregar el área de scroll al layout principal
         layout.addWidget(self.scroll_area)
+
+        # LAYOUT GRÁFICA CON SUBPLOTS ####################################################################################################################
+        self.subplot_area = QWidget()
+        self.subplot_area.setFixedHeight(620)
+        self.subplot_area.hide()
+        layout.addWidget(self.subplot_area)
 
         # IMG fondo
         self.backgroundLogo = QLabel(self)
@@ -259,6 +323,12 @@ class Ventana(QWidget):
             self.ruta_to_input = archivo_csv
             self.ruta_input.setText(archivo_csv)
             #print(f"Ruta del archivo seleccionado: {self.ruta_input}")
+
+    # Cerrar todos los desplegables despegados 
+    def close_desplegables(self):
+        self.excel_container_frame.setVisible(False)
+        self.scroll_area.setVisible(False)
+        self.subplot_area.setVisible(False)
 
     # Obtener la fecha y hora actuales
     def get_current_timestamp(self):
@@ -343,9 +413,9 @@ class Ventana(QWidget):
             self.message_label_xlsx.setText(f"Error: {str(e)}")
             self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
             self.message_label_xlsx.show()
-
-        
+    
     def compare_data(self):
+        self.subplot_area.show()
         file_name = self.ruta_to_input
 
         # Limpiar el layout existente antes de agregar nuevos elementos
@@ -393,12 +463,14 @@ class Ventana(QWidget):
         axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Mostrar etiquetas del eje x solo en el último subplot
         axs[-1].set_xlabel('Timestamp')
 
-        # Agregar la figura al layout usando FigureCanvas
+        # Crear FigureCanvas y añadirlo al layout de subplot_area
         canvas = FigureCanvas(fig)
-        self.layout_tablas.addWidget(canvas)
+        if not self.subplot_area.layout():
+            self.subplot_area.setLayout(QVBoxLayout())
+        self.subplot_area.layout().addWidget(canvas)
 
-        # Mostrar el QScrollArea después de cargar los datos
-        self.scroll_area.show()
+        # Mostrar el área de subplots
+        self.subplot_area.show()
 
 
     
@@ -504,5 +576,6 @@ class Ventana(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ventana = Ventana()
+    ventana.showMaximized() 
     ventana.show()
     sys.exit(app.exec())
