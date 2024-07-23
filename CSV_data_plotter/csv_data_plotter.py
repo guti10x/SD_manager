@@ -49,19 +49,24 @@ class Ventana(QWidget):
         self.setGeometry(50, 50, 1100, 500) 
         self.setWindowTitle('CSV data plotter analyzer')
 
-        # PLANTILLA DE LA VENTANA ############################################################################################################
+        # PLANTILLA DE LA VENTANA ###########################################################################################################################################
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-         # TÍTULO #############################################################################################################################
+        # PLANTILLA HEADER INPUT + OPCIONES ############################################################################################################################
+        # Crear el layout header_menu
+        layout_header_menu = QVBoxLayout()
+
+        # TÍTULO #############################################################################################################################
         titulo_label = QLabel('CSV Data Plotter Analyzer', self)
         titulo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-        titulo_label.setFont(QFont('Arial', 24, QFont.Weight.Bold))  
-        layout.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
+        titulo_label.setFont(QFont('Helvetica Neue', 24, QFont.Weight.Bold))
+        titulo_label.setStyleSheet("border:None;")  
+        layout_header_menu.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
 
-        # Spacer para añadir espacio debajo de los botones
+        # Spacer para añadir espacio debajo del título
         spacer1 = QSpacerItem(0, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout.addItem(spacer1)
+        layout_header_menu.addItem(spacer1)
 
         # INPUT RUTA CSV ####################################################################################################################
         input_ruta = QHBoxLayout()
@@ -70,7 +75,7 @@ class Ventana(QWidget):
 
         # Crear y añadir el QLabel
         input_label = QLabel('Path to the CSV file:', self)
-        input_label.setStyleSheet("font-size: 17px;")
+        input_label.setStyleSheet("font-size: 17px; border:None;")
         input_ruta.addWidget(input_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Crear y añadir el QLineEdit
@@ -90,26 +95,26 @@ class Ventana(QWidget):
             "}"
             "QPushButton:hover {"
             "background-color: #BF3F29;"
-            "border-color: #FFFFFF;"  # Cambia el color del borde en hover
+            "border-color: #FFFFFF;" 
             "}"
             "QPushButton:pressed {"
             "background-color: #A7301C;"
             "transform: scale(0.95);"
-            "border-color: #FFFFFF;"  # Cambia el color del borde al hacer clic
+            "border-color: #FFFFFF;"  
             "}"
         )
         input_ruta.addWidget(btn_subir_csv) 
 
         input_ruta.addSpacing(50)
 
-        # Añadir el layout horizontal al layout principal
-        layout.addLayout(input_ruta)
+        # Añadir el layout horizontal al layout_header_menu
+        layout_header_menu.addLayout(input_ruta)
 
         # Spacer para añadir espacio debajo de los botones
         spacer2 = QSpacerItem(0, 15, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout.addItem(spacer2)
+        layout_header_menu.addItem(spacer2)
 
-         # BOTONES OPCIONES ############################################################################################################
+        # BOTONES OPCIONES ############################################################################################################
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
@@ -130,7 +135,7 @@ class Ventana(QWidget):
             "QPushButton:pressed {"
             "background-color: #A7301C;"
             "transform: scale(0.95);"
-            "}")  # Botón rojo con efectos de hover y click
+            "}")
         layout_botones.addWidget(btn_cargar_datos)
 
         # Espacio entre los botones
@@ -150,7 +155,7 @@ class Ventana(QWidget):
             "QPushButton:pressed {"
             "background-color: #A7301C;"
             "transform: scale(0.95);"
-            "}")  # Botón rojo con efectos de hover y click
+            "}") 
         layout_botones.addWidget(btn_compare)
 
         # Espacio entre los botones
@@ -196,26 +201,45 @@ class Ventana(QWidget):
         # Espacio entre los botones
         layout_botones.addSpacing(120)
 
-        # Añadir el layout horizontal de los botones al layout principal
-        layout.addLayout(layout_botones)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Añadir el layout horizontal de los botones al layout_header_menu
+        layout_header_menu.addLayout(layout_botones)
+        layout_header_menu.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Spacer para añadir espacio debajo de los botones
         spacer3 = QSpacerItem(0, 18, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout.addItem(spacer3)
+        layout_header_menu.addItem(spacer3)
+
+        layout_header_menu.setContentsMargins(10, 10, 10, 10)  # Margenes del header
+
+        # Crear y configurar el widget del header
+        header_widget = QWidget()
+        header_widget.setLayout(layout_header_menu)
+        header_widget.setStyleSheet(
+            "background-color: rgba(245, 245, 245, 200); border: 2px solid #E41B12; "
+            "border-radius: 30px; padding: 10px; "
+            "box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);"
+        )
+        # Configurar el tamaño del header
+        header_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        header_widget.setFixedHeight(250)  # Ajusta la altura según necesidad
+
+        # Añadir el widget del header al layout principal
+        layout.addWidget(header_widget, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+
+        # Configurar el layout principal para centrar su contenido
+        self.setLayout(layout)
 
 
         # LAYOUTS PARA AJUSTES DE FUNCIONALIDADES DE CADA BOTÓN #######################################################################
 
         # Contenedor para los elementos del generador de Excel
-        self.excel_container_frame = QFrame(self)  # Usamos QFrame para aplicar borde
+        self.excel_container_frame = QFrame(self)  
+        self.excel_container_frame.setFixedWidth(1450)
         self.excel_container_layout = QVBoxLayout(self.excel_container_frame)
 
         # Estilos para el contenedor de Excel
         self.excel_container_frame.setStyleSheet(""" 
             QFrame {
-                margin-right: 100px;       
-                margin-left: 100px;  
                 border: 2px solid #FF0000; 
                 border-radius: 8px;       
                 padding: 10px;           
@@ -227,12 +251,30 @@ class Ventana(QWidget):
         self.excel_container_layout.setSpacing(10)
 
         # Sub-layout para el nombre del archivo ##########################################################
+        head_layout = QHBoxLayout()
+        head_layout.setContentsMargins(0, 0, 0, 0)  # Sin márgenes
+        head_layout.setSpacing(10)  # Espacio entre los elementos
+
+        # Etiqueta para el nombre del desplegable de configuración para crear Excel
+        file_name_label = QLabel('Generate Excel Settings', self)
+        file_name_label.setStyleSheet("font-size: 25px; margin:0; border: none; font-weight: bold; color: #333;")
+        head_layout.addWidget(file_name_label)
+
+        #Botón para cerrar desplegable de configuración para crear Excel
+        self.close_button = QPushButton('X', self)
+        self.close_button.clicked.connect(self.hide_excel_report)
+        self.close_button.setStyleSheet("padding: 5px 10px; font-size: 14px; background-color: #E41B12; color: white; border: none; border-radius: 4px;")
+        head_layout.addWidget(self.close_button, alignment=Qt.AlignmentFlag.AlignRight)
+
+        self.excel_container_layout.addLayout(head_layout)
+
+        # Sub-layout para el nombre del archivo ##########################################################
         file_input_layout = QHBoxLayout()
         file_input_layout.setContentsMargins(0, 0, 0, 0)  # Sin márgenes
         file_input_layout.setSpacing(10)  # Espacio entre los elementos
 
         # Etiqueta para el nombre del archivo
-        file_name_label = QLabel('Nombre del archivo:', self)
+        file_name_label = QLabel('Filename:', self)
         file_name_label.setStyleSheet("font-size: 16px; margin:0; border: none; font-weight: bold; color: #333;")
         file_input_layout.addWidget(file_name_label)
 
@@ -249,7 +291,7 @@ class Ventana(QWidget):
         checkbox_layout = QHBoxLayout()
         checkbox_layout.setSpacing(10)
 
-        self.timestamp_checkbox = QCheckBox("Añadir fecha actual al nombre del archivo", self)
+        self.timestamp_checkbox = QCheckBox("Add current date to the filename", self)
         self.timestamp_checkbox.setStyleSheet("margin-left:15px; font-size: 16px; color: #555;")
         checkbox_layout.addWidget(self.timestamp_checkbox)
 
@@ -261,7 +303,7 @@ class Ventana(QWidget):
         button_layout.setSpacing(10)
 
         # Botón para generar el archivo Excel
-        self.generate_button = QPushButton('Generar Excel', self)
+        self.generate_button = QPushButton('Generate Excel', self)
         self.generate_button.clicked.connect(self.generate_excel_report)
         self.generate_button.setStyleSheet("padding: 10px 20px; font-size: 14px; background-color: #E41B12; color: white; border: none; border-radius: 4px; margin-left: 15px; margin-top:20px;")
 
@@ -277,7 +319,7 @@ class Ventana(QWidget):
         self.excel_container_layout.addWidget(self.message_label_xlsx, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Añadir el contenedor de Excel al layout principal
-        layout.addWidget(self.excel_container_frame)
+        layout.addWidget(self.excel_container_frame, alignment=Qt.AlignmentFlag.AlignCenter)
         self.toggle_excel_container(False)
 
 
@@ -343,6 +385,9 @@ class Ventana(QWidget):
     # Mostrar el contenedor de Excel
     def show_excel_report(self):
         self.toggle_excel_container(True)
+
+    def hide_excel_report(self):
+        self.toggle_excel_container(False)
 
     #Generar plot de graficas comparativas
     def generate_excel_report(self):
