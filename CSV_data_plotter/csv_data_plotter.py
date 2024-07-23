@@ -19,6 +19,7 @@ from statistics import mean, stdev
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
+from datetime import datetime
 
 class Ventana(QWidget):
 
@@ -47,12 +48,12 @@ class Ventana(QWidget):
         self.setGeometry(50, 50, 1100, 500) 
         self.setWindowTitle('CSV data plotter analyzer')
 
-        # PLANTILLA
+        # PLANTILLA DE LA VENTANA ############################################################################################################
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 60)
         self.setLayout(layout)
 
-        # TÍTULO
+        # TÍTULO #############################################################################################################################
         titulo_label = QLabel('CSV Data Plotter Analyzer', self)
         titulo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
         titulo_label.setFont(QFont('Arial', 20, QFont.Weight.Bold))  
@@ -62,7 +63,7 @@ class Ventana(QWidget):
         spacer1 = QSpacerItem(0, 25, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer1)
 
-        # INPUT CSV
+        # INPUT RUTA CSV ####################################################################################################################
         input_ruta = QHBoxLayout()
 
         input_ruta.addSpacing(120)
@@ -144,7 +145,7 @@ class Ventana(QWidget):
         layout.addItem(spacer3)
 
 
-        # LAYOUTS PARA AJUSTES DE FUNCIONALIDADES DE CADA BOTÓN ############################################################################################################
+        # LAYOUTS PARA AJUSTES DE FUNCIONALIDADES DE CADA BOTÓN #######################################################################
 
         # Contenedor para los elementos del generador de Excel
         self.excel_container_frame = QFrame(self)  # Usamos QFrame para aplicar borde
@@ -188,7 +189,7 @@ class Ventana(QWidget):
         checkbox_layout = QHBoxLayout()
         checkbox_layout.setSpacing(10)
 
-        self.timestamp_checkbox = QCheckBox("Añadir fecha al nombre del archivo", self)
+        self.timestamp_checkbox = QCheckBox("Añadir fecha actual al nombre del archivo", self)
         self.timestamp_checkbox.setStyleSheet("margin-left:15px; font-size: 16px; color: #555;")
         checkbox_layout.addWidget(self.timestamp_checkbox)
 
@@ -249,8 +250,8 @@ class Ventana(QWidget):
 
     ruta_to_input = None
 
+    # Abrir un diálogo para seleccionar archivo CSV
     def abrir_dialogo_csv(self):
-        # Abrir un diálogo para seleccionar archivo CSV
         archivo_csv, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo CSV", "", "Archivos CSV (*.csv)")
         
         if archivo_csv:
@@ -258,12 +259,21 @@ class Ventana(QWidget):
             self.ruta_input.setText(archivo_csv)
             #print(f"Ruta del archivo seleccionado: {self.ruta_input}")
 
+    # Obtener la fecha y hora actuales
+    def get_current_timestamp(self):
+        now = datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+        return timestamp
+
+    # Mostrar u ocultar el contenedor de Excel
     def toggle_excel_container(self, visible):
         self.excel_container_frame.setVisible(visible)
 
+    # Mostrar el contenedor de Excel
     def show_excel_report(self):
         self.toggle_excel_container(True)
 
+    #Generar excell 
     def generate_excel_report(self):
         # Asegúrate de que el mensaje de error se oculte inicialmente
         self.message_label_xlsx.hide()
@@ -274,7 +284,7 @@ class Ventana(QWidget):
             self.message_label_xlsx.show()
             return 
 
-        file_name = self.file_name_input.text().strip()  # Obtiene el texto y elimina espacios en blanco
+        file_name = self.file_name_input.text().strip()  
 
         # Verificar si el campo de texto está vacío
         if not file_name:
@@ -282,7 +292,13 @@ class Ventana(QWidget):
             self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
             self.message_label_xlsx.show()
             return 
-
+        
+        # Verificar el estado del checkbox
+        if self.timestamp_checkbox.isChecked():
+            file_name = f'{file_name}_{self.get_current_timestamp()}'
+        else:
+            file_name = f'{file_name}'
+          
         try:
             # Leer el archivo CSV
             self.csv_data = pd.read_csv(self.ruta_to_input, header=None, names=['ID', 'Value', 'Timestamp'])
