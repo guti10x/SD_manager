@@ -20,6 +20,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from datetime import datetime
+from matplotlib import pyplot as plt
 
 class Ventana(QWidget):
 
@@ -109,11 +110,11 @@ class Ventana(QWidget):
         # Espacio entre los botones
         layout_botones.addSpacing(50)
 
-        # Botón para subir datos a Google Drive
-        btn_drive_upload = QPushButton('Upload to Google Drive', self)
-        btn_drive_upload.clicked.connect(self.upload_google_drive)
-        btn_drive_upload.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }") 
-        layout_botones.addWidget(btn_drive_upload)
+        # Botón para comparar datos 
+        btn_compare = QPushButton('Compare data', self)
+        btn_compare.clicked.connect(self.compare_data)
+        btn_compare.setStyleSheet("QPushButton { padding: 8px 20px; font-size: 14px; }") 
+        layout_botones.addWidget(btn_compare)
 
         # Espacio entre los botones
         layout_botones.addSpacing(50)
@@ -273,7 +274,7 @@ class Ventana(QWidget):
     def show_excel_report(self):
         self.toggle_excel_container(True)
 
-    #Generar excell 
+    #Generar plot de graficas comparativas
     def generate_excel_report(self):
         # Asegúrate de que el mensaje de error se oculte inicialmente
         self.message_label_xlsx.hide()
@@ -344,8 +345,62 @@ class Ventana(QWidget):
             self.message_label_xlsx.show()
 
         
-    def upload_google_drive(self, nombre):
-        return
+    def compare_data(self):
+        file_name = self.ruta_to_input
+
+        # Limpiar el layout existente antes de agregar nuevos elementos
+        for i in reversed(range(self.layout_tablas.count())):
+            widget = self.layout_tablas.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        if not file_name:
+            titulo = QLabel("No data to display")
+            titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            titulo.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
+            self.layout_tablas.addWidget(titulo)
+            return
+
+        # Crear una lista de IDs que queremos mostrar
+        ids_a_mostrar = list(self.ID_TO_PARAM.keys())
+
+        # Crear un diccionario para almacenar los datos por ID
+        datos_por_id = {id_: [] for id_ in ids_a_mostrar}
+
+        with open(file_name, 'r', newline='') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Saltar la cabecera si la hay
+            for line in csv_reader:
+                if len(line) >= 3:  # Asegurar que la línea tenga al menos 3 elementos (ID, Valor, Timestamp)
+                    id_ = int(line[0])  # Suponiendo que el ID está en la primera columna y es un entero
+                    valor = line[1]
+                    timestamp = line[2]
+                    if id_ in datos_por_id:
+                        datos_por_id[id_].append((timestamp, valor))
+
+        # Crear la figura y los subplots
+        fig, axs = plt.subplots(len(ids_a_mostrar), 1, sharex=True, gridspec_kw={'hspace': 0})
+
+        for i, id_ in enumerate(ids_a_mostrar):
+            x_data = [timestamp for timestamp, _ in datos_por_id[id_]]
+            y_data = [float(valor) for _, valor in datos_por_id[id_]]
+
+            axs[i].plot(x_data, y_data, marker='o')
+            axs[i].set_ylabel(self.ID_TO_PARAM[id_])
+            axs[i].tick_params(axis='x', which='both', bottom=False, labelbottom=False)  # Ocultar etiquetas del eje x para subplots
+            axs[i].grid(True)  # Activar la cuadrícula en cada subplot
+
+        axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Mostrar etiquetas del eje x solo en el último subplot
+        axs[-1].set_xlabel('Timestamp')
+
+        # Agregar la figura al layout usando FigureCanvas
+        canvas = FigureCanvas(fig)
+        self.layout_tablas.addWidget(canvas)
+
+        # Mostrar el QScrollArea después de cargar los datos
+        self.scroll_area.show()
+
+
     
     def generate_pdf_report(self, nombre):
         return
@@ -360,7 +415,7 @@ class Ventana(QWidget):
                 widget.deleteLater()
 
         # Crear una lista de IDs que queremos mostrar
-        ids_a_mostrar = [1, 2, 3, 4, 5, 6, 7]
+        ids_a_mostrar = list(self.ID_TO_PARAM.keys())
 
         # Crear un diccionario para almacenar los datos por ID
         datos_por_id = {id_: [] for id_ in ids_a_mostrar}
@@ -379,7 +434,7 @@ class Ventana(QWidget):
 
             # Recorrer los IDs y crear una tabla para cada uno
             for id_ in ids_a_mostrar:
-                titulo = QLabel(self.archivos_csv[id_ - 1])  # Usar el nombre del archivo correspondiente
+                titulo = QLabel(self.ID_TO_PARAM[id_])
                 titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 titulo.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
                 self.layout_tablas.addWidget(titulo)
@@ -418,7 +473,7 @@ class Ventana(QWidget):
                 # Agregar la tabla al layout horizontal
                 h_layout.addWidget(tabla)
 
-                # GRÁfICA
+                # GRÁFICA
                 # Crear la gráfica asociada
                 x_data = [timestamp for timestamp, _ in data]
                 y_data = [float(valor) for _, valor in data]
@@ -445,7 +500,7 @@ class Ventana(QWidget):
 
         # Mostrar el QScrollArea después de cargar los datos
         self.scroll_area.show()
-        
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ventana = Ventana()
