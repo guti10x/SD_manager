@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushB
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
+from matplotlib import ticker
 import numpy as np
 from statistics import mean, stdev
 import pandas as pd
@@ -22,6 +23,27 @@ from openpyxl.styles import Alignment
 from datetime import datetime
 from matplotlib import pyplot as plt
 
+# TOOLBAR GRÁFICAS
+class CustomToolbar(NavigationToolbar2QT):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Estilo de la barra de herramientas
+        self.setStyleSheet(
+            "background-color: #FFFFFF;"  # Color de fondo rojo
+            "QToolButton {"
+            "    color: white;"  # Color del texto en los botones
+            "    background-color: #111111;"  # Fondo de los botones
+            "}"
+            "QToolButton:hover {"
+            "    background-color: #FFFFFF;"  # Fondo de los botones al pasar el mouse
+            "}"
+            "QToolButton:pressed {"
+            "    background-color: #FFFFFF;"  # Fondo de los botones al presionar
+            "}"
+        )
+
+
+# VENTANA MAIN
 class Ventana(QWidget):
 
     def __init__(self):
@@ -29,14 +51,14 @@ class Ventana(QWidget):
 
         # equivalencias ID <-> parámetro
         self.ID_TO_PARAM = {
-            1: 'engine_temp_value',
-            2: 'Batery_volt_value',
-            3: 'brake1_temp_value',
-            4: 'brake2_temp_value',
-            5: 'brake3_temp_value',
-            6: 'brake4_temp_value',
-            7: 'gear_value',
-            8: 'speed_value',
+            1: 'Engine temperature',
+            2: 'Batery voltage',
+            3: 'Brake 1 temperature',
+            4: 'Brake 2 temperature',
+            5: 'Brake 3 temperature',
+            6: 'Brake 4 temperature',
+            7: 'Gear',
+            8: 'Speed',
         }
 
         self.graficas = {} 
@@ -47,7 +69,7 @@ class Ventana(QWidget):
 
         # Configuración de la ventana
         self.setGeometry(50, 50, 1100, 500) 
-        self.setWindowTitle('CSV data plotter analyzer')
+        self.setWindowTitle('FUEM CSV data plotter analyzer')
 
         # PLANTILLA DE LA VENTANA ###########################################################################################################################################
         layout = QVBoxLayout()
@@ -327,21 +349,35 @@ class Ventana(QWidget):
 
         # Widget scrollable para las tablas
         self.scroll_content = QWidget()
+        self.scroll_content.setFixedWidth(1465)
         self.layout_tablas = QVBoxLayout(self.scroll_content)
         
         # Crear un área de scroll
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.scroll_content)
-        self.scroll_area.setFixedHeight(620)
+        self.scroll_area.setFixedHeight(520)
+        self.scroll_area.setFixedWidth(1510)
         self.scroll_area.hide()
+        self.scroll_area.setStyleSheet(
+            "QScrollArea {"
+            "background-color: rgba(245, 245, 245, 200);"
+            "border: 2px solid #E41B12;"
+            "border-radius: 10px;"
+            "padding: 10px;"
+            "}"
+            "QScrollArea > QWidget > QWidget {"
+            "background-color: rgba(245, 245, 245, 200);"
+            "border-radius: 10px;"
+            "}"
+        )
 
         # Agregar el área de scroll al layout principal
         layout.addWidget(self.scroll_area)
 
         # LAYOUT GRÁFICA CON SUBPLOTS ####################################################################################################################
         self.subplot_area = QWidget()
-        self.subplot_area.setFixedHeight(620)
+        self.subplot_area.setFixedHeight(520)
         self.subplot_area.hide()
         layout.addWidget(self.subplot_area)
 
@@ -417,7 +453,7 @@ class Ventana(QWidget):
           
         try:
             # Leer el archivo CSV
-            self.csv_data = pd.read_csv(self.ruta_to_input, header=None, names=['ID', 'Value', 'Timestamp'])
+            self.csv_data = pd.read_csv(self.ruta_to_input, header=None, names=['ID', 'Value', 'Time'])
             
             with pd.ExcelWriter(f'{file_name}.xlsx', engine='openpyxl') as writer:
                 # Bandera para verificar si se añadió al menos una hoja
@@ -428,7 +464,7 @@ class Ventana(QWidget):
                     df_filtered = self.csv_data[self.csv_data['ID'] == param_id]
                     if not df_filtered.empty:
                         # Renombrar la columna 'Value' a nombre del parámetro
-                        df_filtered = df_filtered[['Value', 'Timestamp']]
+                        df_filtered = df_filtered[['Value', 'Time']]
                         df_filtered.rename(columns={'Value': param_name}, inplace=True)
                         # Escribir en la hoja correspondiente
                         df_filtered.to_excel(writer, sheet_name=param_name, index=False)
@@ -506,7 +542,7 @@ class Ventana(QWidget):
             axs[i].grid(True)  # Activar la cuadrícula en cada subplot
 
         axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Mostrar etiquetas del eje x solo en el último subplot
-        axs[-1].set_xlabel('Timestamp')
+        axs[-1].set_xlabel('Time')
 
         # Crear FigureCanvas y añadirlo al layout de subplot_area
         canvas = FigureCanvas(fig)
@@ -518,7 +554,6 @@ class Ventana(QWidget):
         self.subplot_area.show()
 
 
-    
     def generate_pdf_report(self, nombre):
         return
 
@@ -546,8 +581,17 @@ class Ventana(QWidget):
                         id_ = int(line[0])  # Suponiendo que el ID está en la primera columna y es un entero
                         valor = line[1]
                         timestamp = line[2]
+
+                        # Formatear el timestamp: eliminar día, mes, año y dejar solo hora, minutos y segundos
+                        try:
+                            dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                            formatted_timestamp = dt.strftime('%H:%M:%S')
+                        except ValueError:
+                            # Si el formato es incorrecto, devolver el timestamp original
+                            formatted_timestamp = timestamp
+
                         if id_ in datos_por_id:
-                            datos_por_id[id_].append((timestamp, valor))
+                            datos_por_id[id_].append((formatted_timestamp, valor))
 
             # Recorrer los IDs y crear una tabla para cada uno
             for id_ in ids_a_mostrar:
@@ -556,14 +600,18 @@ class Ventana(QWidget):
                 titulo.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
                 self.layout_tablas.addWidget(titulo)
 
-                h_layout = QHBoxLayout()  # Crear un layout horizontal para la tabla y la gráfica
+                # Crear un widget para contener el layout horizontal
+                h_widget = QWidget()
 
+                # Crear un layout horizontal para la tabla y la gráfica
+                h_layout = QHBoxLayout(h_widget)
+
+                # Crear la tabla
                 tabla = QTableWidget()
                 tabla.setColumnCount(2)
-                tabla.setHorizontalHeaderLabels(['Timestamp', 'Valor'])
+                tabla.setHorizontalHeaderLabels(['Time (x)', 'Value (y)'])
 
                 data = datos_por_id[id_]
-
                 tabla.setRowCount(len(data))
 
                 for row, (timestamp, valor) in enumerate(data):
@@ -581,42 +629,67 @@ class Ventana(QWidget):
                 tabla.setColumnWidth(0, 200)
 
                 # Establecer el alto y ancho de la tabla
-                altura_tabla = 450
-                ancho_tabla = 342
-
+                altura_tabla = 560
+                ancho_tabla = 242
                 tabla.setFixedHeight(altura_tabla)
                 tabla.setFixedWidth(ancho_tabla)
 
-                # Agregar la tabla al layout horizontal
                 h_layout.addWidget(tabla)
+
+                # Widget para contener la barra de herramientas y la gráfica
+                graph_widget = QWidget()
+                graph_layout = QVBoxLayout(graph_widget)
 
                 # GRÁFICA
                 # Crear la gráfica asociada
                 x_data = [timestamp for timestamp, _ in data]
                 y_data = [float(valor) for _, valor in data]
 
-                fig = Figure(figsize=(4, 3))
+                # Ajustar el tamaño de la gráfica 
+                fig = Figure(figsize=(8, 6))  
                 ax = fig.add_subplot(111)
-                ax.plot(x_data, y_data, marker='o')
+                ax.plot(x_data, y_data, marker='o', color='#E41B12') 
 
                 ax.set_xlabel('Time')
                 ax.set_ylabel('Value')
 
-                canvas = FigureCanvas(fig)
-                h_layout.addWidget(canvas)
+                # Ajustar las etiquetas del eje X para evitar solapamiento
+                ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=15))  # Num etiquetas en el eje X
+                for label in ax.get_xticklabels():
+                    label.set_rotation(30)  # Rotación etiquetas en el eje X
+                    label.set_horizontalalignment('right')
 
-                # Agregar el layout horizontal al layout principal vertical
-                self.layout_tablas.addLayout(h_layout)
+                # Crear el canvas para la gráfica
+                canvas = FigureCanvas(fig)
+
+                # Añadir la barra de herramientas personalizada de matplotlib
+                toolbar = CustomToolbar(canvas, self)
+                graph_layout.addWidget(toolbar)  # Añadir la barra de herramientas al layout vertical
+                graph_layout.addWidget(canvas)   # Añadir la gráfica al layout vertical
+
+                # Ajustar el ancho y alto del widget que contiene la gráfica
+                graph_widget.setFixedWidth(1150)  # Ajustar el ancho según tus necesidades
+                graph_widget.setFixedHeight(580)  # El mismo alto que la tabla
+
+                # Agregar el widget con la gráfica y la barra de herramientas al layout horizontal
+                h_layout.addWidget(graph_widget)
+
+                # Ajustar el ancho del widget que contiene el layout horizontal
+                h_widget.setFixedWidth(1500)  # Ajustar el ancho total según tus necesidades
+
+                # Agregar el widget con el layout horizontal al layout principal vertical
+                self.layout_tablas.addWidget(h_widget)
 
         else:
             # Crear etiqueta de título
             titulo = QLabel("No data to display")
             titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            titulo.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
+            titulo.setStyleSheet("font-size: 18pt; font-weight: bold; margin: 10px;")
             self.layout_tablas.addWidget(titulo)
 
         # Mostrar el QScrollArea después de cargar los datos
         self.scroll_area.show()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
