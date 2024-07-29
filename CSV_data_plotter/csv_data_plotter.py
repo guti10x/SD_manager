@@ -46,6 +46,7 @@ class CustomToolbar(NavigationToolbar2QT):
 # VENTANA MAIN
 class Ventana(QWidget):
 
+    # SETUP##### #############################################################################################################################
     def __init__(self):
         super().__init__()
 
@@ -65,21 +66,22 @@ class Ventana(QWidget):
 
         self.initUI()
 
+    # INTERFAZ ###############################################################################################################################
     def initUI(self):
 
         # Configuración de la ventana
         self.setGeometry(50, 50, 1100, 500) 
         self.setWindowTitle('FUEM CSV data plotter analyzer')
 
-        # PLANTILLA DE LA VENTANA ###########################################################################################################################################
+        # PLANTILLA DE LA VENTANA #################################################################################################
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        # PLANTILLA HEADER INPUT + OPCIONES ############################################################################################################################
+        # PLANTILLA HEADER INPUT + OPCIONES #################################################################################
         # Crear el layout header_menu
         layout_header_menu = QVBoxLayout()
 
-        # TÍTULO #############################################################################################################################
+        # TÍTULO ###################################################################################################
         titulo_label = QLabel('CSV Data Plotter Analyzer', self)
         titulo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
         titulo_label.setFont(QFont('Helvetica Neue', 24, QFont.Weight.Bold))
@@ -90,7 +92,7 @@ class Ventana(QWidget):
         spacer1 = QSpacerItem(0, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout_header_menu.addItem(spacer1)
 
-        # INPUT RUTA CSV ####################################################################################################################
+        # INPUT RUTA CSV ##########################################################################################
         input_ruta = QHBoxLayout()
 
         input_ruta.addSpacing(60)
@@ -136,7 +138,7 @@ class Ventana(QWidget):
         spacer2 = QSpacerItem(0, 15, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout_header_menu.addItem(spacer2)
 
-        # BOTONES OPCIONES ############################################################################################################
+        # BOTONES OPCIONES #########################################################################################
         # Layout horizontal para los botones
         layout_botones = QHBoxLayout()
 
@@ -252,7 +254,7 @@ class Ventana(QWidget):
         self.setLayout(layout)
 
 
-        # LAYOUTS PARA AJUSTES DE FUNCIONALIDADES DE CADA BOTÓN #######################################################################
+        # LAYOUTS PARA AJUSTES DE FUNCIONALIDADES DE CADA BOTÓN ###################################################
 
         # Contenedor para los elementos del generador de Excel
         self.excel_container_frame = QFrame(self)  
@@ -345,7 +347,7 @@ class Ventana(QWidget):
         self.toggle_excel_container(False)
 
 
-        # LAYOUT GRÁFICAS INDIVIDUALES Y TABLAS ############################################################################################################
+        # LAYOUT GRÁFICAS INDIVIDUALES Y TABLAS ####################################################################
 
         # Widget scrollable para las tablas
         self.scroll_content = QWidget()
@@ -375,7 +377,7 @@ class Ventana(QWidget):
         # Agregar el área de scroll al layout principal
         layout.addWidget(self.scroll_area)
 
-        # LAYOUT GRÁFICA CON SUBPLOTS ####################################################################################################################
+        # LAYOUT GRÁFICA CON SUBPLOTS #############################################################################
         self.subplot_area = QWidget()
         self.subplot_area.setFixedHeight(520)
         self.subplot_area.hide()
@@ -392,6 +394,8 @@ class Ventana(QWidget):
         layout.addWidget(self.backgroundLogo)
 
     ruta_to_input = None
+
+    # FUNCIONES ##############################################################################################################################
 
     # Abrir un diálogo para seleccionar archivo CSV
     def abrir_dialogo_csv(self):
@@ -422,11 +426,16 @@ class Ventana(QWidget):
     def show_excel_report(self):
         self.toggle_excel_container(True)
 
+    # Ocultar el contenedor de Excel
     def hide_excel_report(self):
         self.toggle_excel_container(False)
 
     #Generar plot de graficas comparativas
     def generate_excel_report(self):
+        
+        # Cerrar todos los desplegables abiertos
+        self.close_desplegables()
+
         # Asegúrate de que el mensaje de error se oculte inicialmente
         self.message_label_xlsx.hide()
 
@@ -494,42 +503,50 @@ class Ventana(QWidget):
             self.message_label_xlsx.setText(f"Error: {str(e)}")
             self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
             self.message_label_xlsx.show()
-    
+
     def compare_data(self):
-        self.subplot_area.show()
+
+        # Cerrar todos los desplegables abiertos
+        self.close_desplegables()
+
         file_name = self.ruta_to_input
 
-        # Limpiar el layout existente antes de agregar nuevos elementos
-        for i in reversed(range(self.layout_tablas.count())):
-            widget = self.layout_tablas.itemAt(i).widget()
+        # Ensure that the subplot_area has a layout
+        if not self.subplot_area.layout():
+            self.subplot_area.setLayout(QVBoxLayout())
+
+        # Clear the layout of subplot_area
+        for i in reversed(range(self.subplot_area.layout().count())):
+            widget = self.subplot_area.layout().itemAt(i).widget()
             if widget:
                 widget.deleteLater()
 
         if not file_name:
-            titulo = QLabel("No data to display")
-            titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            titulo.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
-            self.layout_tablas.addWidget(titulo)
+            title_subplot_compare = QLabel("No data to display")
+            title_subplot_compare.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            title_subplot_compare.setStyleSheet("font-size: 11pt; font-weight: bold; margin: 10px;")
+            self.subplot_area.layout().addWidget(title_subplot_compare)
+            self.subplot_area.show()
             return
 
-        # Crear una lista de IDs que queremos mostrar
+        # Create a list of IDs to display
         ids_a_mostrar = list(self.ID_TO_PARAM.keys())
 
-        # Crear un diccionario para almacenar los datos por ID
+        # Create a dictionary to store data by ID
         datos_por_id = {id_: [] for id_ in ids_a_mostrar}
 
         with open(file_name, 'r', newline='') as csv_file:
             csv_reader = csv.reader(csv_file)
-            next(csv_reader)  # Saltar la cabecera si la hay
+            next(csv_reader)  # Skip the header if present
             for line in csv_reader:
-                if len(line) >= 3:  # Asegurar que la línea tenga al menos 3 elementos (ID, Valor, Timestamp)
-                    id_ = int(line[0])  # Suponiendo que el ID está en la primera columna y es un entero
+                if len(line) >= 3:  # Ensure the line has at least 3 elements (ID, Value, Timestamp)
+                    id_ = int(line[0])  # Assuming the ID is in the first column and is an integer
                     valor = line[1]
                     timestamp = line[2]
                     if id_ in datos_por_id:
                         datos_por_id[id_].append((timestamp, valor))
 
-        # Crear la figura y los subplots
+        # Create the figure and subplots
         fig, axs = plt.subplots(len(ids_a_mostrar), 1, sharex=True, gridspec_kw={'hspace': 0})
 
         for i, id_ in enumerate(ids_a_mostrar):
@@ -538,21 +555,18 @@ class Ventana(QWidget):
 
             axs[i].plot(x_data, y_data, marker='o')
             axs[i].set_ylabel(self.ID_TO_PARAM[id_])
-            axs[i].tick_params(axis='x', which='both', bottom=False, labelbottom=False)  # Ocultar etiquetas del eje x para subplots
-            axs[i].grid(True)  # Activar la cuadrícula en cada subplot
+            axs[i].tick_params(axis='x', which='both', bottom=False, labelbottom=False)  # Hide x-axis labels for subplots
+            axs[i].grid(True)  # Enable grid on each subplot
 
-        axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Mostrar etiquetas del eje x solo en el último subplot
+        axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Show x-axis labels only on the last subplot
         axs[-1].set_xlabel('Time')
 
-        # Crear FigureCanvas y añadirlo al layout de subplot_area
+        # Create FigureCanvas and add it to the layout of subplot_area
         canvas = FigureCanvas(fig)
-        if not self.subplot_area.layout():
-            self.subplot_area.setLayout(QVBoxLayout())
         self.subplot_area.layout().addWidget(canvas)
 
-        # Mostrar el área de subplots
+        # Show the subplot area
         self.subplot_area.show()
-
 
     def generate_pdf_report(self, nombre):
         return
