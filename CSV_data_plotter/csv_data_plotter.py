@@ -21,15 +21,15 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from datetime import datetime
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt    
 
 # TOOLBAR GRÁFICAS
 class CustomToolbar(NavigationToolbar2QT):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, canvas, parent=None):
+        super().__init__(canvas, parent)
         # Estilo de la barra de herramientas
         self.setStyleSheet(
-            "background-color: #FFFFFF;"  # Color de fondo rojo
+            "background-color: #FFFFFF;"  # Color de fondo blanco
             "QToolButton {"
             "    color: white;"  # Color del texto en los botones
             "    background-color: #111111;"  # Fondo de los botones
@@ -41,7 +41,14 @@ class CustomToolbar(NavigationToolbar2QT):
             "    background-color: #FFFFFF;"  # Fondo de los botones al presionar
             "}"
         )
+        self.hide_home_button()
 
+    def hide_home_button(self):
+        # Iterate through the toolbar's children to find the "Home" button
+        for action in self.actions():
+            if action.text() == 'Home':
+                action.setVisible(False)
+                break
 
 # VENTANA MAIN
 class Ventana(QWidget):
@@ -79,18 +86,26 @@ class Ventana(QWidget):
 
         # PLANTILLA HEADER INPUT + OPCIONES #################################################################################
         # Crear el layout header_menu
-        layout_header_menu = QVBoxLayout()
+        # Create the header_menu_widget and layout_header_menu
+        self.header_menu_widget = QWidget()
+        self.layout_header_menu = QVBoxLayout(self.header_menu_widget)
+
+        # Add the header menu widget to the main layout
+        layout.addWidget(self.header_menu_widget)
+
+        # Add the header menu widget to the main layout
+        layout.addWidget(self.header_menu_widget)
 
         # TÍTULO ###################################################################################################
         titulo_label = QLabel('CSV Data Plotter Analyzer', self)
         titulo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
         titulo_label.setFont(QFont('Helvetica Neue', 24, QFont.Weight.Bold))
         titulo_label.setStyleSheet("border:None;")  
-        layout_header_menu.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
+        self.layout_header_menu.addWidget(titulo_label, Qt.AlignmentFlag.AlignHCenter)
 
         # Spacer para añadir espacio debajo del título
         spacer1 = QSpacerItem(0, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout_header_menu.addItem(spacer1)
+        self.layout_header_menu.addItem(spacer1)
 
         # INPUT RUTA CSV ##########################################################################################
         input_ruta = QHBoxLayout()
@@ -132,11 +147,11 @@ class Ventana(QWidget):
         input_ruta.addSpacing(50)
 
         # Añadir el layout horizontal al layout_header_menu
-        layout_header_menu.addLayout(input_ruta)
+        self.layout_header_menu.addLayout(input_ruta)
 
         # Spacer para añadir espacio debajo de los botones
         spacer2 = QSpacerItem(0, 15, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout_header_menu.addItem(spacer2)
+        self.layout_header_menu.addItem(spacer2)
 
         # BOTONES OPCIONES #########################################################################################
         # Layout horizontal para los botones
@@ -207,7 +222,7 @@ class Ventana(QWidget):
 
         # Botón para generar informe en PDF
         btn_pdf = QPushButton('Generate PDF', self)
-        btn_pdf.clicked.connect(self.close_desplegables)
+        btn_pdf.clicked.connect(self.generate_pdf_report)
         btn_pdf.setStyleSheet(
             "background-color: #E41B12; color: white; padding: 10px 20px; border-radius: 5px; "
             "font-size: 14px; border: none; text-align: center;"
@@ -226,18 +241,18 @@ class Ventana(QWidget):
         layout_botones.addSpacing(120)
 
         # Añadir el layout horizontal de los botones al layout_header_menu
-        layout_header_menu.addLayout(layout_botones)
-        layout_header_menu.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout_header_menu.addLayout(layout_botones)
+        self.layout_header_menu.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Spacer para añadir espacio debajo de los botones
         spacer3 = QSpacerItem(0, 18, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout_header_menu.addItem(spacer3)
+        self.layout_header_menu.addItem(spacer3)
 
-        layout_header_menu.setContentsMargins(10, 10, 10, 10)  # Margenes del header
+        self.layout_header_menu.setContentsMargins(10, 10, 10, 10)  # Margenes del header
 
         # Crear y configurar el widget del header
         header_widget = QWidget()
-        header_widget.setLayout(layout_header_menu)
+        header_widget.setLayout(self.layout_header_menu)
         header_widget.setStyleSheet(
             "background-color: rgba(245, 245, 245, 200); border: 2px solid #E41B12; "
             "border-radius: 30px; padding: 10px; "
@@ -406,12 +421,12 @@ class Ventana(QWidget):
             self.ruta_input.setText(archivo_csv)
             #print(f"Ruta del archivo seleccionado: {self.ruta_input}")
 
-    # Cerrar todos los desplegables despegados 
+    # Cerrar todos los desplegables desplegados 
     def close_desplegables(self):
-        self.excel_container_frame.setVisible(False)
         self.scroll_area.setVisible(False)
         self.subplot_area.setVisible(False)
-
+        self.toggle_excel_container(False)
+        
     # Obtener la fecha y hora actuales
     def get_current_timestamp(self):
         now = datetime.now()
@@ -537,41 +552,50 @@ class Ventana(QWidget):
 
         with open(file_name, 'r', newline='') as csv_file:
             csv_reader = csv.reader(csv_file)
-            next(csv_reader)  # Skip the header if present
+            next(csv_reader)  
             for line in csv_reader:
-                if len(line) >= 3:  # Ensure the line has at least 3 elements (ID, Value, Timestamp)
-                    id_ = int(line[0])  # Assuming the ID is in the first column and is an integer
+                if len(line) >= 3:  
+                    id_ = int(line[0]) 
                     valor = line[1]
                     timestamp = line[2]
                     if id_ in datos_por_id:
                         datos_por_id[id_].append((timestamp, valor))
 
-        # Create the figure and subplots
-        fig, axs = plt.subplots(len(ids_a_mostrar), 1, sharex=True, gridspec_kw={'hspace': 0})
+        # Define the figure size (width, height) in inches
+        fig, axs = plt.subplots(len(ids_a_mostrar), 1, sharex=True, gridspec_kw={'hspace': 0}, figsize=(9, 8))
 
         for i, id_ in enumerate(ids_a_mostrar):
             x_data = [timestamp for timestamp, _ in datos_por_id[id_]]
             y_data = [float(valor) for _, valor in datos_por_id[id_]]
 
-            axs[i].plot(x_data, y_data, marker='o')
+            axs[i].plot(x_data, y_data, marker='o', color='red')  # Set line color to red
             axs[i].set_ylabel(self.ID_TO_PARAM[id_])
             axs[i].tick_params(axis='x', which='both', bottom=False, labelbottom=False)  # Hide x-axis labels for subplots
-            axs[i].grid(True)  # Enable grid on each subplot
+            axs[i].grid(True)
 
         axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Show x-axis labels only on the last subplot
         axs[-1].set_xlabel('Time')
 
         # Create FigureCanvas and add it to the layout of subplot_area
         canvas = FigureCanvas(fig)
+        toolbar = CustomToolbar(canvas, self.subplot_area)
+
+        # Add the toolbar and canvas to the layout
+        self.subplot_area.layout().addWidget(toolbar)
         self.subplot_area.layout().addWidget(canvas)
 
         # Show the subplot area
         self.subplot_area.show()
 
-    def generate_pdf_report(self, nombre):
-        return
+    def generate_pdf_report(self):
+        
+        # Cerrar todos los desplegables abiertos
+        self.close_desplegables()
 
     def cargar_datos(self):
+
+        self.header_menu_widget.hide()
+
         file_name = self.ruta_to_input
 
         # Limpiar el layout existente antes de agregar nuevos elementos
