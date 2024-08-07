@@ -21,7 +21,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from datetime import datetime
-from matplotlib import pyplot as plt    
+from matplotlib import pyplot as plt  
 
 # TOOLBAR GRÁFICAS
 class CustomToolbar(NavigationToolbar2QT):
@@ -59,12 +59,12 @@ class Ventana(QWidget):
 
         # equivalencias ID <-> parámetro
         self.ID_TO_PARAM = {
-            1: 'Engine temperature',
-            2: 'Batery voltage',
-            3: 'Brake 1 temperature',
-            4: 'Brake 2 temperature',
-            5: 'Brake 3 temperature',
-            6: 'Brake 4 temperature',
+            1: 'Engine temp',
+            2: 'Batery vol',
+            3: 'Brake 1 temp',
+            4: 'Brake 2 temp',
+            5: 'Brake 3 temp',
+            6: 'Brake 4 temp',
             7: 'Gear',
             8: 'Speed',
         }
@@ -518,9 +518,8 @@ class Ventana(QWidget):
             self.message_label_xlsx.setText(f"Error: {str(e)}")
             self.message_label_xlsx.setStyleSheet("color: #FF0000; border: none; margin:0; font-size: 16px;")
             self.message_label_xlsx.show()
-
+    
     def compare_data(self):
-
         # Cerrar todos los desplegables abiertos
         self.close_desplegables()
 
@@ -552,29 +551,45 @@ class Ventana(QWidget):
 
         with open(file_name, 'r', newline='') as csv_file:
             csv_reader = csv.reader(csv_file)
-            next(csv_reader)  
+            next(csv_reader)
             for line in csv_reader:
-                if len(line) >= 3:  
-                    id_ = int(line[0]) 
+                if len(line) >= 3:
+                    id_ = int(line[0])
                     valor = line[1]
                     timestamp = line[2]
                     if id_ in datos_por_id:
                         datos_por_id[id_].append((timestamp, valor))
 
-        # Define the figure size (width, height) in inches
-        fig, axs = plt.subplots(len(ids_a_mostrar), 1, sharex=True, gridspec_kw={'hspace': 0}, figsize=(9, 8))
+        # Define figure size (width, height)
+        fig, axs = plt.subplots(len(ids_a_mostrar), 1, sharex=True, figsize=(12, 10))
 
         for i, id_ in enumerate(ids_a_mostrar):
-            x_data = [timestamp for timestamp, _ in datos_por_id[id_]]
+            x_data = [timestamp.split()[1] for timestamp, _ in datos_por_id[id_]]  # Extract only the time part
             y_data = [float(valor) for _, valor in datos_por_id[id_]]
 
             axs[i].plot(x_data, y_data, marker='o', color='red')  # Set line color to red
-            axs[i].set_ylabel(self.ID_TO_PARAM[id_])
+
+            # Remove the default y-axis label
+            axs[i].set_ylabel("")
+
+            # Add custom styled text as y-axis label
+            axs[i].text(-0.1, 0.5, self.ID_TO_PARAM[id_], 
+            transform=axs[i].transAxes, 
+            fontsize=10, 
+            verticalalignment='center', 
+            horizontalalignment='right',
+            bbox=dict(facecolor='red', edgecolor='black', boxstyle='round,pad=0.5'))
+
             axs[i].tick_params(axis='x', which='both', bottom=False, labelbottom=False)  # Hide x-axis labels for subplots
             axs[i].grid(True)
 
         axs[-1].tick_params(axis='x', which='both', bottom=True, labelbottom=True)  # Show x-axis labels only on the last subplot
+        axs[-1].xaxis.set_major_locator(ticker.MaxNLocator(nbins=15))  # Num marcas eje X
+        plt.setp(axs[-1].get_xticklabels(), rotation=0, ha='right')  # Rotación etiquetas eje X
         axs[-1].set_xlabel('Time')
+
+        # Adjust the layout to remove margins and fit content
+        fig.tight_layout()
 
         # Create FigureCanvas and add it to the layout of subplot_area
         canvas = FigureCanvas(fig)
