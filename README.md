@@ -8,8 +8,7 @@ Este repositorio ofrece las herramientas para la recopilación y análisis de la
 
 ## Esquema del proyecto
 
-![FUEdddM_cawr](https://github.com/user-attachments/assets/caed8593-ae45-4999-9ca5-03207b536eb0)
-
+![banner_sd_managerVwhite](https://github.com/user-attachments/assets/0d45d6f7-ca5d-42c8-ba90-9a95508e0d7a)
 
 ## Desarrolo del contenido del Repositorio
 
